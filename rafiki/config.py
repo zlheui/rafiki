@@ -1,3 +1,5 @@
+from rafiki.constants import TaskType, OutputType
+
 # Global
 APP_SECRET = 'rafiki'
 SUPERADMIN_EMAIL = 'superadmin@rafiki'
@@ -12,6 +14,11 @@ INFERENCE_MAX_BEST_TRIALS = 2
 
 # Predictor
 PREDICTOR_PREDICT_SLEEP = 0.25
+
+# Ensembler
+TASK_TYPE_TO_OUTPUT_TYPE_MAPPING = {
+    TaskType.IMAGE_CLASSIFICATION: OutputType.PROBABILITY_VECTOR
+}
 
 # Inference worker
 INFERENCE_WORKER_SLEEP = 0.25

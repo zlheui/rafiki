@@ -46,3 +46,6 @@ class DatasetProtocol():
 
 class TaskType():
     IMAGE_CLASSIFICATION = 'IMAGE_CLASSIFICATION'
+
+class OutputType():
+    PROBABILITY_VECTOR = 'PROBABILITY_VECTOR'

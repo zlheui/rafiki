@@ -48,7 +48,7 @@ class Predictor(object):
 
                     # Concept drift detection: record query (assume each query only have one data point)
                     con_drift_worker = self._db.get_inference_job_worker(worker_id)
-                    con_drift_trial_id = woker.trial_id
+                    con_drift_trial_id = con_drift_worker.trial_id
                     con_drift_data_point = {'query': query}
                     con_drift_pred_indices = np.argmax(prediction, axis=1)
                     con_drift_prediction = [self._worker_to_predict_label_mapping[worker_id][str(i)] for i in con_drift_pred_indices]

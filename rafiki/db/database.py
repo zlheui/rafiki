@@ -7,7 +7,7 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker
+    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Query
 
 class Database(object):
     def __init__(self, 

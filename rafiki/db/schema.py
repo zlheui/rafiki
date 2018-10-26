@@ -111,4 +111,13 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(Binary, nullable=False)
     user_type = Column(String, nullable=False)
-    
+
+
+class Query(Base):
+    __tablename__ = 'query'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
+    predict = Column(String, nullable=False)
+    feedback = Column(String)
+    data_point = Column(JSON, nullable=False)

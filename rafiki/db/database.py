@@ -360,6 +360,20 @@ class Database(object):
         return trial
 
     ####################################
+    # Queries for Concept drift
+    ####################################
+
+    def create_query(self, trial_id, predict, data_point, feedback=NULL):
+        query = Query(
+            trial_id=trial_id,
+            predict=predict,
+            feedback=feedback,
+            data_point=data_point
+        )
+        self._session.add(query)
+        return query
+
+    ####################################
     # Others
     ####################################
     

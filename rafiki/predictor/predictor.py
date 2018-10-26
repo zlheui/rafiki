@@ -45,6 +45,22 @@ class Predictor(object):
                 if prediction is not None:
                     worker_to_prediction[worker_id] = prediction
                     responded_worker_ids.add(worker_id)
+
+                    # Concept drift detection: record query (assume each query only have one data point)
+                    con_drift_worker = self._db.get_inference_job_worker(worker_id)
+                    con_drift_trial_id = woker.trial_id
+                    con_drift_data_point = {'query': query}
+                    con_drift_pred_indices = np.argmax(prediction, axis=1)
+                    con_drift_prediction = [self._worker_to_predict_label_mapping[worker_id][str(i)] for i in con_drift_pred_indices]
+                    if len(con_drift_pred_indicese == 1):
+                        con_drift_prediction = con_drift_prediction[0]
+                        con_drift_query = self._db.create_query(
+                            trial_id=con_drift_trial_id,
+                            predict=con_drift_prediction,
+                            data_point=con_drift_data_point
+                        )
+                        self._db.commit()
+                    # End of Concept drift code
              
             if len(responded_worker_ids) == len(running_worker_ids): 
                 break

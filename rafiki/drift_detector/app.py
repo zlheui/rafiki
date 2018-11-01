@@ -37,7 +37,7 @@ def generate_user_token():
     })
 
 
-@app.route('hello', methods=['GET'])
+@app.route('/hello', methods=['GET'])
 def hello():
     return jsonify({'hello':'hello'})
 

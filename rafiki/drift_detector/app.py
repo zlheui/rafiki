@@ -8,7 +8,7 @@ from rafiki.utils.auth import generate_token, decode_token, UnauthorizedExceptio
 
 from .drift_detector import Drift_Detector
 
-service = DriftDetectService()
+drift_detector = Drift_Detector()
 
 app = Flask(__name__)
 

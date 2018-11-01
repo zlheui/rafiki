@@ -1,7 +1,7 @@
 import os
 
 from rafiki.utils.log import configure_logging
-from rafiki.admin.app import app
+from rafiki.drift_detector.app import app
 
 configure_logging('drift_detector')
 

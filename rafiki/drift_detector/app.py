@@ -6,7 +6,7 @@ from rafiki.constants import UserType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.utils.auth import generate_token, decode_token, UnauthorizedException, auth
 
-from .detector import Detector
+from .drift_detector import Drift_Detector
 
 service = DriftDetectService()
 

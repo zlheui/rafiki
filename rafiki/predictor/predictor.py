@@ -54,7 +54,7 @@ class Predictor(object):
                     # Concept drift detection: record query (assume each query only have one data point)
                     if not added_to_db_query:
                         con_drift_data_point = {'query': query}
-                        con_drift_query = selft._db.create_query(
+                        con_drift_query = self._db.create_query(
                             data_point = con_drift_data_point
                         )
                         self._db.commit()

@@ -129,7 +129,7 @@ class Prediction(Base):
     predict = Column(String, nullable=False)
 
 class Feedback(Base):
-    __tablename__ = 'Feedback'
+    __tablename__ = 'feedback'
 
     id = Column(String, primary_key=True, default=generate_uuid)
     query_id = Column(String, ForeignKey('query.id'), nullable=False)

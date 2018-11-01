@@ -1,6 +1,7 @@
 import abc
 
 from rafiki.constants import DetectorType
+from rafiki.db import Database
 
 class InvalidDriftDetectorTypeException(Exception):
     pass
@@ -10,17 +11,16 @@ class BaseDriftDetector(abc.ABC):
     Rafiki's base DriftDetector class
     '''   
 
-    @abc.abstractmethod
-    def __init__(self):
-        raise NotImplementedError()
+    def __init__(self, db=Database()):
+        self._db = db
 
     @abc.abstractmethod
     def detect(self):
         raise NotImplementedError()
 
-    @abc.abstractmethod
-    def feedback(self, query_id, result):
-        raise NotImplementedError()
+    def feedback(self, query_id, label):
+        self._db.connect()
+        
 
 
 def make_drift_detector(knob_config, detector_type=DetectorType.ACC_DD):

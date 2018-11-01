@@ -128,18 +128,18 @@ if __name__ == '__main__':
     client = Client(admin_host=ADMIN_HOST, admin_port=ADMIN_PORT)
     client.login(email=USER_EMAIL, password=USER_PASSWORD)
 
-    # print('Adding models to Rafiki...') 
-    # create_models(client)
+    print('Adding models to Rafiki...') 
+    create_models(client)
 
-    # print('Creating train job for app "{}" on Rafiki...'.format(APP)) 
-    # create_train_job(client)
+    print('Creating train job for app "{}" on Rafiki...'.format(APP)) 
+    create_train_job(client)
 
-    # print('Waiting for train job to complete...')
-    # wait_until_train_job_has_completed(client)
-    # print('Train job has been completed!')
+    print('Waiting for train job to complete...')
+    wait_until_train_job_has_completed(client)
+    print('Train job has been completed!')
 
-    # print('Listing best trials of latest train job for app "{}"...'.format(APP))
-    # list_best_trials_of_train_job(client)
+    print('Listing best trials of latest train job for app "{}"...'.format(APP))
+    list_best_trials_of_train_job(client)
 
     print('Creating inference job for app "{}" on Rafiki...'.format(APP))
     create_inference_job(client)

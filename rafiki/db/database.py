@@ -380,8 +380,8 @@ class Database(object):
             trial_id = trial_id,
             predict = predict
         )
-        self._session.add(query)
-        return query
+        self._session.add(prediction)
+        return prediction
 
 
     ####################################

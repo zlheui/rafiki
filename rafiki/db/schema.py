@@ -117,7 +117,14 @@ class Query(Base):
     __tablename__ = 'query'
 
     id = Column(String, primary_key=True, default=generate_uuid)
+    data_point = Column(JSON, nullable=False)
+    label = Column(String)
+
+class Prediction(Base):
+    __tablename__ = 'prediction'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    query_id = Column(String, ForeignKey('query.id'), nullable=False)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
-    feedback = Column(String)
-    data_point = Column(JSON, nullable=False)
+    

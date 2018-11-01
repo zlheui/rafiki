@@ -363,14 +363,26 @@ class Database(object):
     # Queries for Concept drift
     ####################################
 
-    def create_query(self, trial_id, predict, data_point):
+    def create_query(self, data_point):
         query = Query(
-            trial_id=trial_id,
-            predict=predict,
             data_point=data_point
         )
         self._session.add(query)
         return query
+
+    ####################################
+    # Predictions for Concept drift
+    ####################################
+
+    def create_prediction(self, query_id, trial_id, predict):
+        prediction = Prediction(
+            query_id = query_id,
+            trial_id = trial_id,
+            predict = predict
+        )
+        self._session.add(query)
+        return query
+
 
     ####################################
     # Others

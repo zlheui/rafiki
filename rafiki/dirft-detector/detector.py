@@ -19,13 +19,13 @@ class BaseDriftDetector(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def feedback(self, query_id):
+    def feedback(self, query_id, result):
         raise NotImplementedError()
 
 
-def make_DriftDetector(knob_config, advisor_type=AdvisorType.BTB_GP):
-    if advisor_type == AdvisorType.BTB_GP:
-        from .btb_gp_advisor import BtbGpAdvisor
-        return BtbGpAdvisor(knob_config)
+def make_drift_detector(knob_config, detector_type=DetectorType.ACC_DD):
+    if detector_type == DetectorType.ACC_DD:
+        # from .btb_gp_advisor import BtbGpAdvisor
+        # return BtbGpAdvisor(knob_config)
     else:
-        raise InvalidAdvisorTypeException()
+        raise InvalidDriftDetectorTypeException()

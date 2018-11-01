@@ -36,6 +36,10 @@ class Predictor(object):
 
         logger.info('Waiting for predictions from workers...')
 
+        
+        added_to_db_query = False
+        self._db.connect()
+        con_drift_query = 0
         #TODO: add SLO. break loop when timer is out.
         while True:
             for (worker_id, query_id) in worker_to_query_id.items():
@@ -48,16 +52,23 @@ class Predictor(object):
                     responded_worker_ids.add(worker_id)
 
                     # Concept drift detection: record query (assume each query only have one data point)
-                    self._db.connect()
+                    if not added_to_db_query:
+                        con_drift_data_point = {'query': query}
+                        con_drift_query = selft._db.create_query(
+                            data_point = con_drift_data_point
+                        )
+                        self._db.commit()
+                        added_to_db_query = True
+
+
                     con_drift_worker = self._db.get_inference_job_worker(worker_id)
                     con_drift_trial_id = con_drift_worker.trial_id
-                    con_drift_data_point = {'query': query}
                     con_drift_pred_indice = np.argmax(prediction, axis=0)
                     con_drift_prediction = self._worker_to_predict_label_mapping[worker_id][str(con_drift_pred_indice)] 
-                    con_drift_query = self._db.create_query(
+                    con_drift_prediction = self._db.create_prediction(
+                        query_id=con_drift_query.id,
                         trial_id=con_drift_trial_id,
                         predict=con_drift_prediction,
-                        data_point=con_drift_data_point
                     )
                     self._db.commit()
                     # End of Concept drift code

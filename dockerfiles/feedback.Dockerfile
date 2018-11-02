@@ -25,6 +25,6 @@ COPY scripts/start_feedback.py start_feedback.py
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /root/rafiki/
 
-EXPOSE 8000
+EXPOSE 8006
 
 CMD ["python", "start_feedback.py"]

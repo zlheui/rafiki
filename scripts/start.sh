@@ -49,21 +49,21 @@ title "Starting Rafiki's DB..."
 (bash $FILE_DIR/start_db.sh &> $LOG_FILEPATH) &
 ensure_stable "Rafiki's DB"
 
-title "Starting Rafiki's Cache..."
-(bash $FILE_DIR/start_cache.sh &> $LOG_FILEPATH) &
-ensure_stable "Rafiki's Cache"
+# title "Starting Rafiki's Cache..."
+# (bash $FILE_DIR/start_cache.sh &> $LOG_FILEPATH) &
+# ensure_stable "Rafiki's Cache"
 
-title "Starting Rafiki's Admin..."
-(bash $FILE_DIR/start_admin.sh &> $LOG_FILEPATH) &
-ensure_stable "Rafiki's Admin"
+# title "Starting Rafiki's Admin..."
+# (bash $FILE_DIR/start_admin.sh &> $LOG_FILEPATH) &
+# ensure_stable "Rafiki's Admin"
 
-title "Starting Rafiki's Advisor..."
-(bash $FILE_DIR/start_advisor.sh &> $LOG_FILEPATH) &
-ensure_stable "Rafiki's Advisor"
+# title "Starting Rafiki's Advisor..."
+# (bash $FILE_DIR/start_advisor.sh &> $LOG_FILEPATH) &
+# ensure_stable "Rafiki's Advisor"
 
-title "Starting Rafiki's Drift Detector..."
-(bash $FILE_DIR/start_drift_detector.sh &> $LOG_FILEPATH) &
-ensure_stable "Rafiki's Drift Detector"
+# title "Starting Rafiki's Drift Detector..."
+# (bash $FILE_DIR/start_drift_detector.sh &> $LOG_FILEPATH) &
+# ensure_stable "Rafiki's Drift Detector"
 
 title "Starting Rafiki's Feedback Server..."
 (bash $FILE_DIR/start_feedback.sh &> $LOG_FILEPATH) &

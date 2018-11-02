@@ -42,7 +42,7 @@ def hello():
     return jsonify({'hello':'hello'})
 
 
-@app.route('/<query_id>', method=['POST']):
+@app.route('/<query_id>', methods=['POST'])
 @auth([UserType.ADMIN, UserType.APP_DEVELOPER])
 def create_feedback(auth, query_id):
     params = get_request_params()

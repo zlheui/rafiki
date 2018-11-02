@@ -25,6 +25,6 @@ COPY scripts/start_drift_detector.py start_drift_detector.py
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /root/rafiki/
 
-EXPOSE 8000
+EXPOSE 8005
 
 CMD ["python", "start_drift_detector.py"]

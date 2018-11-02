@@ -118,6 +118,7 @@ class Query(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     data_point = Column(JSON, nullable=False)
+    train_job_id = Column(String, ForeignKey('train_job.id'))
     
 
 class Prediction(Base):

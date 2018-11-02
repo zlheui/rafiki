@@ -19,7 +19,7 @@ class Predictor(object):
         self._cache = cache
         
         with self._db:
-            (self._inference_job_id, self._worker_to_predict_label_mapping, self._task) \
+            (self._inference_job_id, self._worker_to_predict_label_mapping, self._task, self._train_job_id) \
                 = self._read_predictor_info()
 
     def predict(self, query):
@@ -55,7 +55,8 @@ class Predictor(object):
                     if not added_to_db_query:
                         con_drift_data_point = {'query': query}
                         con_drift_query = self._db.create_query(
-                            data_point = con_drift_data_point
+                            data_point = con_drift_data_point,
+                            train_job_id=self._train_job_id
                         )
                         self._db.commit()
                         added_to_db_query = True
@@ -115,7 +116,8 @@ class Predictor(object):
         return (
             inference_job.id,
             worker_to_predict_label_mappings,
-            train_job.task
+            train_job.task,
+            train_job.id
         )
 
     def predict_batch(self, queries):

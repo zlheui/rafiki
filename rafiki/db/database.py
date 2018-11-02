@@ -363,8 +363,9 @@ class Database(object):
     # Query for Concept drift
     ####################################
 
-    def create_query(self, data_point):
+    def create_query(self, train_job_id, data_point):
         query = Query(
+            train_job_id=train_job_id,
             data_point=data_point
         )
         self._session.add(query)

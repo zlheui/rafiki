@@ -55,8 +55,8 @@ class Predictor(object):
                     if not added_to_db_query:
                         con_drift_data_point = {'query': query}
                         con_drift_query = self._db.create_query(
-                            data_point = con_drift_data_point,
-                            train_job_id=self._train_job_id
+                            train_job_id=self._train_job_id,
+                            data_point = con_drift_data_point
                         )
                         self._db.commit()
                         added_to_db_query = True

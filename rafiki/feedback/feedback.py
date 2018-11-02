@@ -12,20 +12,19 @@ logger = logging.getLogger(__name__)
 
 class Feedback(object):
 
-    def __init__(self, db=Database()):
-        self._db = db
+	def __init__(self, db=Database()):
+		self._db = db
 
 
-    def create_feedback(self, query_id, label=None):
-    	is_added = False
-    	label_is_none = True
+	def create_feedback(self, query_id, label=None):
+		is_added = False
+		label_is_none = True
+		if label is not None:
+			self._db.connect()
+			feedback = self._db.create_feedback(query_id=query_id, label=label)
+			self._db.commit()
+			label_is_none = False
+			is_added = True
 
-    	if label is not None:
-    		self._db.connect()
-    		feedback = self._db.create_feedback(query_id=query_id, label=label)
-            self._db.commit()
-            label_is_none = False
-            is_added = True
-        
-        return {'query_id': query_id, 'is_added': is_added, 'label_is_none': label_is_none} 
+		return {'query_id': query_id, 'is_added': is_added, 'label_is_none': label_is_none}
 

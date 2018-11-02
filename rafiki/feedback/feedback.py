@@ -25,9 +25,8 @@ class Feedback(object):
     		self._db.connect()
     		feedback = self._db.create_feedback(
                 	query_id = query_id,
-                	label = label
-		)
-            	self._db.commit()
+                	label = label)
+            self._db.commit()
 
         return {
             'query_id': query_id,

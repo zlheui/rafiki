@@ -65,5 +65,9 @@ title "Starting Rafiki's Drift Detector..."
 (bash $FILE_DIR/start_drift_detector.sh &> $LOG_FILEPATH) &
 ensure_stable "Rafiki's Drift Detector"
 
+title "Starting Rafiki's Feedback Server..."
+(bash $FILE_DIR/start_feedback.sh &> $LOG_FILEPATH) &
+ensure_stable "Rafiki's Feedback Server"
+
 echo "To use Rafiki, use Rafiki Client in the Python CLI"
 echo "Refer to Rafiki's docs at https://nginyc.github.io/rafiki2/docs/"

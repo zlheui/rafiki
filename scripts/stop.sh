@@ -27,5 +27,8 @@ docker rm -f rafiki_advisor || echo "Failed to stop Rafiki's Advisor"
 title "Stopping Rafiki's Drift Detector..."
 docker rm -f rafiki_drift_detector || echo "Failed to stop Rafiki's Drift Detector"
 
+title "Stopping Rafiki's Feedback Server..."
+docker rm -f rafiki_feedback || echo "Failed to stop Rafiki's Feedback Server"
+
 echo "You'll need to destroy your machine's Docker swarm & Rafiki's logs folder at $LOGS_FOLDER_PATH manually"
 

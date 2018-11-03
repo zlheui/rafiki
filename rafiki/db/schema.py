@@ -133,5 +133,5 @@ class Feedback(Base):
     __tablename__ = 'feedback'
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    query_id = Column(String, ForeignKey('query.id'), nullable=False)
+    query_index = Column(Integer, nullable=False)
     label = Column(String, nullable=False) 

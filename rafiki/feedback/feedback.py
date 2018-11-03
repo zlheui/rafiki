@@ -16,15 +16,15 @@ class Feedback(object):
         self._db = db
 
 
-    def create_feedback(self, query_id, label=None):
+    def create_feedback(self, query_index, label=None):
         is_added = False
         label_is_none = True
 
         if label is not None:
             self._db.connect()
-            feedback = self._db.create_feedback(query_id=query_id, label=label)
+            feedback = self._db.create_feedback(query_index=int(query_index), label=label)
             self._db.commit()
             label_is_none = False
             is_added = True
         
-        return {'query_id': query_id, 'is_added': is_added, 'label_is_none': label_is_none} 
+        return {'query_index': query_index, 'is_added': is_added, 'label_is_none': label_is_none} 

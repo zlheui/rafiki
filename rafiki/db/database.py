@@ -383,9 +383,9 @@ class Database(object):
     # Predictions for Concept drift
     ####################################
 
-    def create_prediction(self, query_id, trial_id, predict):
+    def create_prediction(self, query_index, trial_id, predict):
         prediction = Prediction(
-            query_id = query_id,
+            query_index = query_index,
             trial_id = trial_id,
             predict = predict
         )
@@ -396,9 +396,9 @@ class Database(object):
     # Feedback for Concept drift
     ####################################
 
-    def create_feedback(self, query_id, label):
+    def create_feedback(self, query_index, label):
         feedback = Feedback(
-            query_id = query_id,
+            query_index = query_index,
             label = label
         )
         self._session.add(feedback)

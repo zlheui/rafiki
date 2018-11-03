@@ -25,9 +25,9 @@ class DataRepository(object):
         query_index = -1
         if data_point is not None:
             
-            self._db.connect()
             train_job = self._db.get_train_job(train_job_id)
-        	query_stats = self._db.get_query_stats_by_train_job_id(train_job_id)
+            query_stats = self._db.get_query_stats_by_train_job_id(train_job_id)
+            self._db.connect()
             if len(query_stats) == 0:
                 query_stats = self._db.create_query_stats(train_job_id)
                 self._db.commit()
@@ -44,8 +44,8 @@ class DataRepository(object):
                 with open(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.csv'), 'w') as f:
                     f.write(','.join([str(e) for e in data_point]))
                 is_added = True
-        	else:
-        		raise NotImplementedError
+            else:
+                raise NotImplementedError
 
             if is_added:
                 self._db.update_query_stats(query_stats, query_index+1)

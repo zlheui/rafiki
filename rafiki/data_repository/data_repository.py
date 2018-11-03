@@ -19,7 +19,11 @@ class DataRepository(object):
         self._db = db
 
     def create_new_dataset(self, train_job_id):
-        raise NotImplementedError
+        output = [e for e in os.listdir(os.path.join(self._cwd, train_job_id, 'query'))]
+
+        return {
+            'queries': output
+        }
 
     def create_query(self, train_job_id, data_point=None):
         is_added = False

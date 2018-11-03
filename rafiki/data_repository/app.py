@@ -42,11 +42,18 @@ def hello():
     return jsonify({'hello':'hello'})
 
 
-@app.route('/<train_job_id>/', methods=['POST'])
+@app.route('/<train_job_id>/', methods=['GET'])
 @auth([UserType.ADMIN, UserType.APP_DEVELOPER])
 def create_new_dataset(auth, train_job_id):
     params = get_request_params()
     return jsonify(data_repository.create_new_dataset(train_job_id, **params))
+
+
+@app.route('/<train_job_id>/query', methods=['POST'])
+@auth([UserType.ADMIN, UserType.APP_DEVELOPER])
+def create_query(auth, train_job_id):
+    params = get_request_params()
+    return jsonify(data_repository.create_query(train_job_id, **params))
 
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)

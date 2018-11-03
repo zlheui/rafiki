@@ -119,7 +119,13 @@ class Query(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     data_point = Column(JSON, nullable=False)
     train_job_id = Column(String, ForeignKey('train_job.id'))
-    
+
+class QueryStats(Base):
+    __tablename__ = 'query_stats'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    train_job_id = Column(String, ForeignKey('train_job.id'))
+    next_query_index = Column(Integer, nullable=False)
 
 class Prediction(Base):
     __tablename__ = 'prediction'

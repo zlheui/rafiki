@@ -15,11 +15,14 @@ class Client(object):
     :param int advisor_port: Port of Rafiki Advisor
     '''
     def __init__(self, admin_host='localhost', admin_port=8000,
-                advisor_host='localhost', advisor_port=8001):
+                advisor_host='localhost', advisor_port=8001,
+                data_repository_host='localhost', data_repository_port='8007'):
         self._admin_host = admin_host
         self._admin_port = admin_port
         self._advisor_host = advisor_host
         self._advisor_port = advisor_port
+        self._data_repository_host = data_repository_host
+        self._data_repository_port = data_repository_port
         self._token = None
 
     def login(self, email, password):
@@ -336,6 +339,18 @@ class Client(object):
         return data
 
     ####################################
+    # Data Repository
+    ####################################
+
+    def create_query(self, train_job_id, data_point):
+        data = self._post('/'+train_job_id+'/query/',
+                        target='data_repository', json={
+                            'train_job_id': train_job_id,
+                            'data_point': data_point
+                        })
+        return data
+
+    ####################################
     # Private
     ####################################
 
@@ -380,6 +395,8 @@ class Client(object):
             url = 'http://{}:{}{}'.format(self._admin_host, self._admin_port, path)
         elif target == 'advisor':
             url = 'http://{}:{}{}'.format(self._advisor_host, self._advisor_port, path)
+        elif target == 'data_repository':
+            url = 'http://{}:{}{}'.format(self._data_repository_host, self._data_repository_port, path)
         else:
             raise Exception('Invalid URL target: {}'.format(target))
 

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, Float, ForeignKey, Integer, Binary, DateTime
+from sqlalchemy import Column, String, Float, ForeignKey, Integer, Binary, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import JSON
 import uuid
 import datetime
@@ -80,6 +80,7 @@ class TrainJob(Base):
     status = Column(String, nullable=False, default=TrainJobStatus.STARTED)
     user_id = Column(String, ForeignKey('user.id'), nullable=False)
     datetime_completed = Column(DateTime, default=None)
+    subscribe_to_drift_detection_service = Column(Boolean, default=True)
 
 class TrainJobWorker(Base):
     __tablename__ = 'train_job_worker'
@@ -113,13 +114,6 @@ class User(Base):
     user_type = Column(String, nullable=False)
 
 
-class Query(Base):
-    __tablename__ = 'query'
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    data_point = Column(JSON, nullable=False)
-    train_job_id = Column(String, ForeignKey('train_job.id'))
-
 class QueryStats(Base):
     __tablename__ = 'query_stats'
 
@@ -131,7 +125,7 @@ class Prediction(Base):
     __tablename__ = 'prediction'
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    query_id = Column(String, ForeignKey('query.id'), nullable=False)
+    query_index = Column(Integer, nullable=False)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
 

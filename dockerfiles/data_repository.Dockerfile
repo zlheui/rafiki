@@ -25,6 +25,6 @@ COPY scripts/start_data_repository.py start_data_repository.py
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /root/rafiki/
 
-EXPOSE 8000
+EXPOSE 8007
 
 CMD ["python", "start_data_repository.py"]

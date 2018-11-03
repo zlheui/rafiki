@@ -126,7 +126,13 @@ class ServicesManager(object):
             'POSTGRES_PASSWORD': os.environ['POSTGRES_PASSWORD'],
             'LOGS_FOLDER_PATH': os.environ['LOGS_FOLDER_PATH'],
             'REDIS_HOST': os.environ['REDIS_HOST'],
-            'REDIS_PORT': os.environ['REDIS_PORT']
+            'REDIS_PORT': os.environ['REDIS_PORT'],
+            'ADMIN_HOST': os.environ['ADMIN_HOST'],
+            'ADMIN_PORT': os.environ['ADMIN_PORT'],
+            'ADVISOR_HOST': os.environ['ADVISOR_HOST'],
+            'ADVISOR_PORT': os.environ['ADVISOR_PORT'],
+            'DATA_REPOSITORY_HOST' = os.environ['DATA_REPOSITORY_HOST'],
+            'DATA_REPOSITORY_PORT' = os.environ['DATA_REPOSITORY_PORT']
         }
 
         service = self._create_service(

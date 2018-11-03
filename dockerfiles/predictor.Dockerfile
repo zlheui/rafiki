@@ -12,6 +12,8 @@ COPY rafiki/db/requirements.txt db/requirements.txt
 RUN pip install -r db/requirements.txt
 COPY rafiki/cache/requirements.txt cache/requirements.txt
 RUN pip install -r cache/requirements.txt
+COPY rafiki/client/requirements.txt client/requirements.txt
+RUN pip install -r client/requirements.txt
 COPY rafiki/predictor/requirements.txt predictor/requirements.txt
 RUN pip install -r predictor/requirements.txt
 

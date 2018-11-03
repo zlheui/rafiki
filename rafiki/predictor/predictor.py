@@ -11,6 +11,7 @@ import numpy as np
 
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 import os
+from rafiki.client import Client
 
 logger = logging.getLogger(__name__)
  

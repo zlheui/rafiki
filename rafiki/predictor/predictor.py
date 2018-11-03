@@ -64,14 +64,10 @@ class Predictor(object):
                             if self._client is None:
                                 self._client = self._make_client()
 
-                            res = self._client.create_query(self._train_job_id, query)
-                            if res.status_code != 200:
-                                raise Exception(res.text)
-                            else:
-                                data = res.json()
-                                if data['is_added'] == 'True':
-                                    added_to_db_query = True
-                                    con_drift_query_index = int(data['query_index'])
+                            data = self._client.create_query(self._train_job_id, query)
+                            if data['is_added'] == 'True':
+                                added_to_db_query = True
+                                con_drift_query_index = int(data['query_index'])
 
                         if added_to_db_query:
                             con_drift_worker = self._db.get_inference_job_worker(worker_id)

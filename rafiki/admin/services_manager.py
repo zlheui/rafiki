@@ -131,8 +131,8 @@ class ServicesManager(object):
             'ADMIN_PORT': os.environ['ADMIN_PORT'],
             'ADVISOR_HOST': os.environ['ADVISOR_HOST'],
             'ADVISOR_PORT': os.environ['ADVISOR_PORT'],
-            'DATA_REPOSITORY_HOST' = os.environ['DATA_REPOSITORY_HOST'],
-            'DATA_REPOSITORY_PORT' = os.environ['DATA_REPOSITORY_PORT']
+            'DATA_REPOSITORY_HOST': os.environ['DATA_REPOSITORY_HOST'],
+            'DATA_REPOSITORY_PORT': os.environ['DATA_REPOSITORY_PORT']
         }
 
         service = self._create_service(

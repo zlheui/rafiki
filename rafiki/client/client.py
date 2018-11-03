@@ -345,7 +345,6 @@ class Client(object):
     def create_query(self, train_job_id, data_point):
         data = self._post('/'+train_job_id+'/query/',
                         target='data_repository', json={
-                            'train_job_id': train_job_id,
                             'data_point': data_point
                         })
         return data

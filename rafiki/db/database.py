@@ -7,7 +7,7 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Query, Prediction, Feedback
+    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Query, Prediction, Feedback, QueryStats
 
 class Database(object):
     def __init__(self, 
@@ -370,6 +370,26 @@ class Database(object):
         )
         self._session.add(query)
         return query
+
+    ####################################
+    # QueryStats for Concept drift
+    ####################################
+
+    def create_query_stats(self, train_job_id):
+        query_stats = QueryStats(
+            train_job_id=train_job_id,
+            next_query_index=0
+        )
+        return query_stats
+
+    def get_query_stats_by_train_job_id(self, train_job_id):
+        query_stats = self._session.query(QueryStats).filter(QueryStats.train_job_id == train_job_id).first()
+        return query_stats
+
+    def update_query_stats(self, query_stats, next_query_index):
+        query_stats.next_query_index = next_query_index
+        self._session.add(query_stats)
+        return query_stats
 
     ####################################
     # Predictions for Concept drift

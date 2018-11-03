@@ -46,6 +46,7 @@ class DatasetProtocol():
 
 class TaskType():
     IMAGE_CLASSIFICATION = 'IMAGE_CLASSIFICATION'
+    FEATURE_VECTOR_CLASSIFICATION = 'FEATURE_VECTOR_CLASSIFICATION'
 
 class DetectorType():
     ACC_DD = 'ACC_DD'

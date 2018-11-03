@@ -37,7 +37,7 @@ class DataRepository(object):
             self._create_query_folder(train_job_id)
             if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                 if len(np.array(data_point).shape) == 2:
-                    plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.png'), np.array(data_point), camp=cm.gray)
+                    plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.png'), np.array(data_point), cmap=cm.gray)
                 else:
                     plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.png'), np.array(data_point))
                 is_added = True

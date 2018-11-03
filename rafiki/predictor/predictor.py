@@ -10,6 +10,7 @@ from .ensemble import ensemble_predictions
 import numpy as np
 
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
+import os
 
 logger = logging.getLogger(__name__)
  

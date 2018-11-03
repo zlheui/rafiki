@@ -7,6 +7,7 @@ from rafiki.db import Database
 from rafiki.constants import TaskType
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

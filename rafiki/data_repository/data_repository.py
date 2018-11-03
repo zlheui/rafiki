@@ -25,9 +25,9 @@ class DataRepository(object):
         query_index = -1
         if data_point is not None:
             
+            self._db.connect()
             train_job = self._db.get_train_job(train_job_id)
             query_stats = self._db.get_query_stats_by_train_job_id(train_job_id)
-            self._db.connect()
             if query_stats is None:
                 query_stats = self._db.create_query_stats(train_job_id)
                 self._db.commit()

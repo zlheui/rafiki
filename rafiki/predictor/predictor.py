@@ -65,7 +65,7 @@ class Predictor(object):
                                 self._client = self._make_client()
 
                             data = self._client.create_query(self._train_job_id, query)
-                            if data['is_added'] == 'True':
+                            if bool(data['is_added']):
                                 added_to_db_query = True
                                 con_drift_query_index = int(data['query_index'])
 

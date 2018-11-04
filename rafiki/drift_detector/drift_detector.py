@@ -18,10 +18,10 @@ class Drift_Detector(object):
     def get_retrain_data_url(self):
         pass
 
-    def detect(self, train_job_id):
+    def detect(self, trial_id):
         pass
 
-    def detect_with_detector_name(self, train_job_id, detector_name):
+    def detect_with_detector_name(self, trial_id, detector_name):
         
 
 
@@ -35,6 +35,8 @@ class Drift_Detector(object):
 
         trial = self._db.get_trial(trial_id)
         train_job = self._db.get_train_job(trial.train_job_id)
+
+        trial = self._db.mark_trial_subscription_to_drift_detection_service(trial)
         train_job = self._db.mark_train_job_subscription_to_drift_detection_service(train_job)
 
         self._db.commit()

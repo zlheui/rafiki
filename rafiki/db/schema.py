@@ -103,6 +103,7 @@ class Trial(Base):
     parameters = Column(JSON, default=None)
     predict_label_mapping = Column(JSON, default=None)
     datetime_stopped = Column(DateTime, default=None)
+    subscribe_to_drift_detection_service = Column(Boolean, default=False)
     
 
 class User(Base):

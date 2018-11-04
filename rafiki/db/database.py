@@ -364,6 +364,11 @@ class Database(object):
         self._session.add(trial)
         return trial
 
+    def mark_trial_subscription_to_drift_detection_service(self, trial):
+        trial.subscribe_to_drift_detection_service = True
+        self._session.add(trial)
+        return trial
+
     ####################################
     # QueryStats for Concept drift
     ####################################

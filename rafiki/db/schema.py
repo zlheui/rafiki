@@ -151,9 +151,9 @@ class Detector(Base):
 class DriftDetectionSub(Base):
     __tablename__ = 'drift_detection_subscription'
     __table_args__ = (
-        UniqueConstraint('train_job_id', 'detector_name'),
+        UniqueConstraint('trial_id', 'detector_name'),
     )
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    train_job_id = Column(String, ForeignKey('train_job.id'), nullable=False)
+    trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     detector_name = Column(String, ForeignKey('detector.name'), nullable=False)

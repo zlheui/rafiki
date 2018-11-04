@@ -22,23 +22,25 @@ class Drift_Detector(object):
         pass
 
     def detect_with_detector_name(self, train_job_id, detector_name):
-        pass
+        
 
-    def subscribe_detector(self, train_job_id, detector_name):
+
+    def subscribe_detector(self, trial_id, detector_name):
         detector_sub = self._db.create_detector_sub(
-            train_job_id=train_job_id,
+            trial_id=trial_id,
             detector_name=detector_name
         )
 
         self._db.commit()
 
-        train_job = self._db.get_train_job(train_job_id)
+        trial = self._db.get_trial(trial_id)
+        train_job = self._db.get_train_job(trial.train_job_id)
         train_job = self._db.mark_train_job_subscription_to_drift_detection_service(train_job)
 
         self._db.commit()
         
         return {
-            'train_job_id': train_job_id,
+            'trial_id': trial_id,
             'name': detector_name
         }
 

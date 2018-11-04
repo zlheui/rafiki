@@ -426,9 +426,9 @@ class Database(object):
     # Detector Subscription for Concept drift
     ####################################
 
-    def create_detector_sub(self, train_job_id, detector_name):
+    def create_detector_sub(self, trial_id, detector_name):
         detector_sub = DriftDetectionSub(
-            train_job_id = train_job_id,
+            trial_id = trial_id,
             detector_name = detector_name
         )
         self._session.add(detector_sub)

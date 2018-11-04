@@ -36,7 +36,7 @@ class Drift_Detector(object):
         train_job = self._db.mark_train_job_subscription_to_drift_detection_service(train_job)
 
         return {
-            'train_job_id': train_job_id
+            'train_job_id': train_job_id,
             'name': detector_name
         }
 

@@ -37,8 +37,9 @@ class Drift_Detector(object):
         train_job = self._db.get_train_job(trial.train_job_id)
 
         trial = self._db.mark_trial_subscription_to_drift_detection_service(trial)
+        self._db.commit()
+        
         train_job = self._db.mark_train_job_subscription_to_drift_detection_service(train_job)
-
         self._db.commit()
         
         return {

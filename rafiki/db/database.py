@@ -427,8 +427,12 @@ class Database(object):
         self._session.add(detector)
         return detector
 
+    def get_detector_by_name(self, detector_name):
+        detector = self._session.query(Detector).filter(Detector.name == detector_name).first()
+        return detector
+
     ####################################
-    # Detector Subscription for Concept drift
+    # DriftDetectionSub for Concept drift
     ####################################
 
     def create_detector_sub(self, trial_id, detector_name):
@@ -438,6 +442,10 @@ class Database(object):
         )
         self._session.add(detector_sub)
         return detector_sub
+
+    def get_detector_subscriptions_by_trial_id(self, trial_id):
+        detector_subs = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).all()
+        return detector_subs
 
     ####################################
     # Others

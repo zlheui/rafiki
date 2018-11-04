@@ -356,7 +356,7 @@ class Client(object):
     # Drift Detector
     ####################################
 
-    def create_detector(self, name, detector_file_path):
+    def create_detector(self, name, detector_file_path, detector_class):
         '''
         Creates a detector on Rafiki.
         '''
@@ -371,7 +371,8 @@ class Client(object):
                 'detector_file_bytes': detector_file_bytes
             },
             form_data={
-                'name': name
+                'name': name,
+                'detector_class': detector_class
             }
         )
         return data

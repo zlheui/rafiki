@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Drift_Detector(object):
-    def __init__(self, db=DataBase()):
+    def __init__(self, db=Database()):
         self._drift_detector = {}
         self._db = db
 

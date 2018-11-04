@@ -22,7 +22,7 @@ class Drift_Detector(object):
         pass
 
     def detect_with_detector_name(self, trial_id, detector_name):
-        
+        pass
 
 
     def subscribe_detector(self, trial_id, detector_name):

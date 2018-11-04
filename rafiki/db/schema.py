@@ -123,12 +123,14 @@ class QueryStats(Base):
 
 class Prediction(Base):
     __tablename__ = 'prediction'
+    __table_args__ = (
+        UniqueConstraint('query_index', 'trial_id'),
+    )
 
     id = Column(String, primary_key=True, default=generate_uuid)
     query_index = Column(Integer, nullable=False)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
-    UniqueConstraint('query_index', 'trial_id', name='uix_query_trial')
 
 class Feedback(Base):
     __tablename__ = 'feedback'
@@ -148,8 +150,10 @@ class Detector(Base):
 
 class DriftDetectionSub(Base):
     __tablename__ = 'drift_detection_subscription'
+    __table_args__ = (
+        UniqueConstraint('train_job_id', 'detector_name'),
+    )
 
     id = Column(String, primary_key=True, default=generate_uuid)
     train_job_id = Column(String, ForeignKey('train_job.id'), nullable=False)
     detector_name = Column(String, ForeignKey('detector.name'), nullable=False)
-    UniqueConstraint('train_job_id', 'detector_name', name='uix_train_job_detector')

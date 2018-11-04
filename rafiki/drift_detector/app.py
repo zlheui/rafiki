@@ -5,6 +5,7 @@ import traceback
 from rafiki.constants import UserType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.utils.auth import generate_token, decode_token, UnauthorizedException, auth
+from rafiki.db import Database
 
 from .drift_detector import Drift_Detector
 

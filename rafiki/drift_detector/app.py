@@ -42,6 +42,19 @@ def hello():
     return jsonify({'hello':'hello'})
 
 
+
+@app.route('/detectors', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def create_detector(auth):
+    params = get_request_params()
+    detector_file_bytes = request.files['detector_file_bytes'].read()
+    params['detector_file_bytes'] = detector_file_bytes
+
+    with drift_detector:
+        return jsonify(drift_detector.create_detector(auth['user_id'], **params))
+
+
+
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)
 @app.errorhandler(Exception)
 def handle_error(error):

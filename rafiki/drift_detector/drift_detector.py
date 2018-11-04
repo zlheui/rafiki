@@ -17,3 +17,13 @@ class Drift_Detector(object):
     	pass
 
 
+   def create_detector(self, user_id, name, detector_file_bytes):
+        detector = self._db.create_detector(
+            user_id=user_id,
+            name=name,
+            detector_file_bytes=model_file_bytes
+        )
+
+        return {
+            'name': detector.name 
+        }

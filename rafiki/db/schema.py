@@ -135,3 +135,13 @@ class Feedback(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     query_index = Column(Integer, nullable=False)
     label = Column(String, nullable=False) 
+
+class Detector(Base):
+    __tablename__ = 'detector'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    datetime_created = Column(DateTime, nullable=False, default=generate_datetime)
+    user_id = Column(String, ForeignKey('user.id'), nullable=False)
+    name = Column(String, unique=True, nullable=False)
+    detector_file_bytes = Column(Binary, nullable=False)
+    

@@ -16,13 +16,16 @@ class Client(object):
     '''
     def __init__(self, admin_host='localhost', admin_port=8000,
                 advisor_host='localhost', advisor_port=8001,
-                data_repository_host='localhost', data_repository_port='8007'):
+                data_repository_host='localhost', data_repository_port=8007,
+                drift_detector_host='localhost', drift_detector_port=8005):
         self._admin_host = admin_host
         self._admin_port = admin_port
         self._advisor_host = advisor_host
         self._advisor_port = advisor_port
         self._data_repository_host = data_repository_host
         self._data_repository_port = data_repository_port
+        self._drift_detector_host = drift_detector_host
+        self._drift_detector_port = drift_detector_port
         self._token = None
 
     def login(self, email, password):
@@ -350,6 +353,30 @@ class Client(object):
         return data
 
     ####################################
+    # Drift Detector
+    ####################################
+
+    def create_detector(self, name, detector_file_path):
+        '''
+        Creates a detector on Rafiki.
+        '''
+
+        f = open(detector_file_path, 'rb')
+        detector_file_bytes = f.read()
+        
+        data = self._post(
+            '/detectors',
+            target='drift_detector',
+            files={
+                'detector_file_bytes': detector_file_bytes
+            },
+            form_data={
+                'name': name
+            }
+        )
+        return data
+
+    ####################################
     # Private
     ####################################
 
@@ -396,6 +423,8 @@ class Client(object):
             url = 'http://{}:{}{}'.format(self._advisor_host, self._advisor_port, path)
         elif target == 'data_repository':
             url = 'http://{}:{}{}'.format(self._data_repository_host, self._data_repository_port, path)
+        elif target == 'drift_detector':
+            url = 'http://{}:{}{}'.format(self._drift_detector_host, self._drift_detector_port, path)
         else:
             raise Exception('Invalid URL target: {}'.format(target))
 

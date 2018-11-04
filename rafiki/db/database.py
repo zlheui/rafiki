@@ -7,7 +7,7 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats
+    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector
 
 class Database(object):
     def __init__(self, 
@@ -403,6 +403,19 @@ class Database(object):
         )
         self._session.add(feedback)
         return feedback
+
+    ####################################
+    # Detector for Concept drift
+    ####################################
+
+    def create_detector(self, user_id, name, detector_file_bytes):
+        detector = Detector(
+            user_id = user_id,
+            name = name,
+            detector_file_bytes = detector_file_bytes
+        )
+        self._session.add(detector)
+        return detector
 
     ####################################
     # Others

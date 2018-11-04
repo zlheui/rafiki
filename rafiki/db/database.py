@@ -107,6 +107,11 @@ class Database(object):
         self._session.add(train_job)
         return train_job
 
+    def mark_train_job_subscription_to_drift_detection_service(self, train_job):
+        train_job.subscribe_to_drift_detection_service = True
+        self._session.add(train_job)
+        return train_job
+
     ####################################
     # Train Job Workers
     ####################################

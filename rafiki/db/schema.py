@@ -80,7 +80,7 @@ class TrainJob(Base):
     status = Column(String, nullable=False, default=TrainJobStatus.STARTED)
     user_id = Column(String, ForeignKey('user.id'), nullable=False)
     datetime_completed = Column(DateTime, default=None)
-    subscribe_to_drift_detection_service = Column(Boolean, default=True)
+    subscribe_to_drift_detection_service = Column(Boolean, default=False)
 
 class TrainJobWorker(Base):
     __tablename__ = 'train_job_worker'

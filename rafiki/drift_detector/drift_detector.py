@@ -35,3 +35,10 @@ class Drift_Detector(object):
 
     def connect(self):
         self._db.connect()
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.disconnect()
+
+    def disconnect(self):
+        self._db.disconnect()
+        

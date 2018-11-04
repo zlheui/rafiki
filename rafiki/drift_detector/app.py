@@ -42,6 +42,12 @@ def hello():
     return jsonify({'hello':'hello'})
 
 
+@app.route('/subscribe/<train_job_id>/<detector_name>', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def subscribe(auth):
+    with drift_detector:
+        return jsonify(drift_detector.subscribe_detector(train_job_id, detector_name))
+
 
 @app.route('/detectors', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])

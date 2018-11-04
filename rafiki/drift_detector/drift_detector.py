@@ -18,6 +18,21 @@ class Drift_Detector(object):
     def get_retrain_data_url(self):
         pass
 
+    def detect(self, train_job_id):
+        pass
+
+    def detect_with_detector_name(self, train_job_id, detector_name):
+        pass
+
+    def subscribe_detector(self, train_job_id, detector_name):
+        detector_sub = self._db.create_detector_sub(
+            train_job_id=train_job_id,
+            detector_name=detector_name
+        )
+
+        return {
+            'name': detector_name
+        }
 
     def create_detector(self, user_id, name, detector_file_bytes):
         detector = self._db.create_detector(

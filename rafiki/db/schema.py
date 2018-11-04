@@ -144,4 +144,10 @@ class Detector(Base):
     user_id = Column(String, ForeignKey('user.id'), nullable=False)
     name = Column(String, unique=True, nullable=False)
     detector_file_bytes = Column(Binary, nullable=False)
-    
+
+class DriftDetectionSub(Base):
+    __tablename__ = 'drift_detection_subscription'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    train_job_id = Column(String, ForeignKey('train_job.id'), nullable=False)
+    detector_name = Column(String, ForeignKey('detector.name'), nullable=False)

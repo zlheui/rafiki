@@ -7,7 +7,7 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector
+    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector, DriftDetectionSub
 
 class Database(object):
     def __init__(self, 
@@ -416,6 +416,18 @@ class Database(object):
         )
         self._session.add(detector)
         return detector
+
+    ####################################
+    # Detector Subscription for Concept drift
+    ####################################
+
+    def create_detector_sub(self, train_job_id, detector_name):
+        detector_sub = DriftDetectionSub(
+            train_job_id = train_job_id,
+            detector_name = detector_name
+        )
+        self._session.add(detector_sub)
+        return detector_sub
 
     ####################################
     # Others

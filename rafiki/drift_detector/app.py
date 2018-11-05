@@ -36,18 +36,33 @@ def generate_user_token():
         'token': token
     })
 
-
 @app.route('/hello', methods=['GET'])
 def hello():
     return jsonify({'hello':'hello'})
 
+@app.route('/drift_detection', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def create_drift_detection_service(auth):
+    with drift_detector:
+        return jsonify(drift_detector.create_drift_detection_service())
+
+@app.route('/drift_detection', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def create_drift_detection_service(auth):
+    with drift_detector:
+        return jsonify(drift_detector.create_drift_detection_service())
+
+@app.route('/drift_detection/stop', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def stop_drift_detection_service(auth):
+    with drift_detector:
+        return jsonify(drift_detector.stop_drift_detection_service())
 
 @app.route('/subscribe/<trial_id>/<detector_name>', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def subscribe(auth, trial_id, detector_name):
     with drift_detector:
         return jsonify(drift_detector.subscribe_detector(trial_id=trial_id, detector_name=detector_name))
-
 
 @app.route('/detectors', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
@@ -58,8 +73,6 @@ def create_detector(auth):
 
     with drift_detector:
         return jsonify(drift_detector.create_detector(auth['user_id'], **params))
-
-
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)
 @app.errorhandler(Exception)

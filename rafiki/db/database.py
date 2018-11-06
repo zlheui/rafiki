@@ -454,8 +454,8 @@ class Database(object):
     def __enter__(self):
         self.connect()
 
-    def connect(self):
-        Session = sessionmaker(bind=self._engine)
+    def connect(self, isolation_level='READ COMMITTED'):
+        Session = sessionmaker(bind=self._engine.execution_options(isolation_level=isolation_level))
         self._session = Session()
 
     def __exit__(self, exception_type, exception_value, traceback):

@@ -11,7 +11,6 @@ import numpy as np
 
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 import os
-from rafiki.client import Client
 
 logger = logging.getLogger(__name__)
  
@@ -21,7 +20,6 @@ class Predictor(object):
         self._service_id = service_id
         self._db = db
         self._cache = cache
-        self._client = None
         
         with self._db:
             (self._inference_job_id, self._worker_to_predict_label_mapping, self._task, self._train_job_id) \
@@ -41,10 +39,16 @@ class Predictor(object):
 
         logger.info('Waiting for predictions from workers...')
 
-        
-        added_to_db_query = False
+        # If train job subscribes to drift detection service
+        # Concept drift detection: record query (only one worker will be available)
         self._db.connect()
-        con_drift_query_index = -1
+        train_job = self._db.get_train_job(self._train_job_id)
+        if train_job.subscribe_to_drift_detection_service:
+            running_drift_detection_worker_ids = self._cache.get_drift_detection_workers()
+            if len(running_drift_detection_worker_ids) > 0:
+                con_drift_query_id = self._cache.add_query_of_worker(running_drift_detection_worker_ids[0], query)
+        # End of Concept drift code
+
         #TODO: add SLO. break loop when timer is out.
         while True:
             for (worker_id, query_id) in worker_to_query_id.items():
@@ -57,29 +61,19 @@ class Predictor(object):
                     responded_worker_ids.add(worker_id)
 
                     # If train job subscribes to drift detection service
-                    # Concept drift detection: record query (assume each query only have one data point)
-                    train_job = self._db.get_train_job(self._train_job_id)
+                    # Concept drift detection: record query prediction (assume all trials used by a train job for inference
+                    # are subscribed to drift detection service)
                     if train_job.subscribe_to_drift_detection_service:
-                        if not added_to_db_query:
-                            if self._client is None:
-                                self._client = self._make_client()
-
-                            data = self._client.create_query(self._train_job_id, query)
-                            if bool(data['is_added']):
-                                added_to_db_query = True
-                                con_drift_query_index = int(data['query_index'])
-
-                        if added_to_db_query:
-                            con_drift_worker = self._db.get_inference_job_worker(worker_id)
-                            con_drift_trial_id = con_drift_worker.trial_id
-                            con_drift_pred_indice = np.argmax(prediction, axis=0)
-                            con_drift_prediction = self._worker_to_predict_label_mapping[worker_id][str(con_drift_pred_indice)] 
-                            con_drift_prediction = self._db.create_prediction(
-                                query_index=con_drift_query_index,
-                                trial_id=con_drift_trial_id,
-                                predict=con_drift_prediction,
-                            )
-                            self._db.commit()
+                        con_drift_worker = self._db.get_inference_job_worker(worker_id)
+                        con_drift_trial_id = con_drift_worker.trial_id
+                        con_drift_pred_indice = np.argmax(prediction, axis=0)
+                        con_drift_prediction = self._worker_to_predict_label_mapping[worker_id][str(con_drift_pred_indice)] 
+                        con_drift_prediction = self._db.create_prediction(
+                            query_index=con_drift_query_index,
+                            trial_id=con_drift_trial_id,
+                            predict=con_drift_prediction,
+                        )
+                        self._db.commit()
                     # End of Concept drift code
              
             if len(responded_worker_ids) == len(running_worker_ids): 
@@ -131,21 +125,3 @@ class Predictor(object):
     def predict_batch(self, queries):
         #TODO: implement method
         pass
-
-    def _make_client(self):
-        admin_host = os.environ['ADMIN_HOST']
-        admin_port = os.environ['ADMIN_PORT']
-        advisor_host = os.environ['ADVISOR_HOST']
-        advisor_port = os.environ['ADVISOR_PORT']
-        data_repository_host = os.environ['DATA_REPOSITORY_HOST']
-        data_repository_port = os.environ['DATA_REPOSITORY_PORT']
-        superadmin_email = SUPERADMIN_EMAIL
-        superadmin_password = SUPERADMIN_PASSWORD
-        client = Client(admin_host=admin_host, 
-                        admin_port=admin_port, 
-                        advisor_host=advisor_host,
-                        advisor_port=advisor_port,
-                        data_repository_host=data_repository_host,
-                        data_repository_port=data_repository_port)
-        client.login(email=superadmin_email, password=superadmin_password)
-        return client

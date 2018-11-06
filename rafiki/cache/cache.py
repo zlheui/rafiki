@@ -6,6 +6,7 @@ import uuid
 RUNNING_INFERENCE_WORKERS = 'INFERENCE_WORKERS'
 QUERIES_QUEUE = 'QUERIES'
 PREDICTIONS_QUEUE = 'PREDICTIONS'
+RUNNING_DRIFT_DETECTION_WORKERS = 'DRIFT_DETECTION_WORKERS'
 
 class Cache(object):
     def __init__(self,
@@ -33,27 +34,18 @@ class Cache(object):
         worker_ids = self._redis.smembers(inference_workers_key)
         return [x.decode() for x in worker_ids]
 
-    def add_query_of_drift_detection_worker(self, worker_id, query_index, query):
-        query = json.dumps({
-            'index': query_index,
-            'query': query
-        })
+    def add_drift_detection_worker(self, worker_id):
+        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+        self._redis.sadd(drift_detection_workers_key, worker_id)
 
-        worker_queries_key = '{}_{}'.formate(QUERIES_QUEUE, worker_id)
-        self._redis.rpush(worker_queries_key, query)
-        return query_index
+    def delete_drift_detection_worker(self, worker_id):
+        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+        self._redis.srem(drift_detection_workers_key, worker_id)
 
-    def pop_query_of_drift_detection_worker(self, worker_id, query_index):
-        worker_queries_key = '{}_{}'.formate(QUERIES_QUEUE, worker_id)
-        queries = self._redis.lrange(worker_queries_key, 0, -1)
-        for (i, query) in enumerate(queries):
-            query = json.loads(query)
-            if query['index'] == query_index:
-                self._redis.ltrim(worker_queries_key, i+1, i)
-                return query['query']
-
-        # Return None if query is not found
-        return None
+    def get_drift_detection_workers(self):
+        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+        worker_ids = self._redis.smembers(drift_detection_workers_key)
+        return [x.decoder() for x in worker_ids]
 
     def add_query_of_worker(self, worker_id, query):
         query_id = str(uuid.uuid4())

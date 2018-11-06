@@ -15,7 +15,8 @@ class Database(object):
         port=os.environ.get('POSTGRES_PORT', 5432),
         user=os.environ.get('POSTGRES_USER', 'rafiki'),
         db=os.environ.get('POSTGRES_DB', 'rafiki'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'rafiki')):
+        password=os.environ.get('POSTGRES_PASSWORD', 'rafiki'),
+        isolation_level='READ COMMITTED'):
 
         db_connection_url = self._make_connection_url(
             host=host, 
@@ -28,6 +29,7 @@ class Database(object):
         self._engine = create_engine(db_connection_url)
         self._session = None
         self._define_tables()
+        self._isolation_level = isolation_level
 
     ####################################
     # Users
@@ -454,8 +456,8 @@ class Database(object):
     def __enter__(self):
         self.connect()
 
-    def connect(self, isolation_level='READ COMMITTED'):
-        Session = sessionmaker(bind=self._engine.execution_options(isolation_level=isolation_level))
+    def connect(self):
+        Session = sessionmaker(bind=self._engine.execution_options(isolation_level=self._isolation_level))
         self._session = Session()
 
     def __exit__(self, exception_type, exception_value, traceback):

@@ -4,6 +4,7 @@ import os
 import traceback
 
 import numpy as np
+from rafiki.cache import Cache
 from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager 
 
@@ -20,6 +21,8 @@ class Drift_Detector(object):
 
     def create_drift_detection_service(self):
         service = self._services_manager.create_drift_detection_service()
+
+        
 
         return {
             'id': service.id

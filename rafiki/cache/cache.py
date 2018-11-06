@@ -67,6 +67,28 @@ class Cache(object):
         queries = [x['query'] for x in queries]
         return (query_ids, queries)
 
+    def add_query_of_drift_detection_worker(self, worker_id, train_job_id, query):
+        query_id = str(uuid.uuid4())
+        query = json.dumps({
+            'id': query_id,
+            'train_job_id': train_job_id,
+            'query': query
+        })
+
+        worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        self._redis.rpush(worker_queries_key, query)
+        return query_id
+
+    def pop_queries_of_drift_detection_worker(self, worker_id, batch_size):
+        worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        queries = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
+        self._redis.ltrim(worker_queries_key, len(queries), -1)
+        queries = [json.loads(x) for x in queries]
+        query_ids = [x['id'] for x in queries]
+        train_job_ids = [x['train_job_id'] for x in queries]
+        queries = [x['query'] for x in queries]
+        return (query_ids, train_job_ids, queries)
+
     def add_prediction_of_worker(self, worker_id, query_id, prediction):
         prediction = json.dumps({
             'id': query_id,

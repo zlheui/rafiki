@@ -46,7 +46,7 @@ class Predictor(object):
         if train_job.subscribe_to_drift_detection_service:
             running_drift_detection_worker_ids = self._cache.get_drift_detection_workers()
             if len(running_drift_detection_worker_ids) > 0:
-                con_drift_query_id = self._cache.add_query_of_worker(running_drift_detection_worker_ids[0], query)
+                con_drift_query_id = self._cache.add_query_of_drift_detection_worker(running_drift_detection_worker_ids[0], self._train_job_id, query)
         # End of Concept drift code
 
         #TODO: add SLO. break loop when timer is out.

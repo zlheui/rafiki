@@ -9,6 +9,7 @@ from rafiki.utils.model import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
+from rafiki.constants import ServiceType
 
 
 def update_on_queries(clazz, train_job_id, queries):
@@ -32,7 +33,7 @@ def update_on_queries(clazz, train_job_id, queries):
             break
 
 
-class DriftDetectionWorker(Object):
+class DriftDetectionQueryWorker(Object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
@@ -44,7 +45,7 @@ class DriftDetectionWorker(Object):
             .format(self._service_id))
 
         # Add to set of running workers
-        self._cache.add_drift_detection_worker(self._service_id)
+        self._cache.add_drift_detection_worker(self._service_id, ServiceType.DRIFT_QUERY)
 
         while True:
             (query_ids, train_job_ids, queries) = \
@@ -52,7 +53,7 @@ class DriftDetectionWorker(Object):
 
             if len(queries) > 0:
                 logger.info('Detecting concept drift for queries...')
-                logger.info(queries)
+                logger.info(['{}_{}'.format(a,b) for a,b in zip(train_job_ids, queries)])
 
                 train_job_id_to_queries = {}
                 for (train_job_id, query) in zip(train_job_ids, queries):
@@ -96,4 +97,4 @@ class DriftDetectionWorker(Object):
 
     def stop(self):
         # Remove from set of running workers
-        self._cache.delete_drift_detection_worker(self._service_id)
+        self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)

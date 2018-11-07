@@ -34,16 +34,16 @@ class Cache(object):
         worker_ids = self._redis.smembers(inference_workers_key)
         return [x.decode() for x in worker_ids]
 
-    def add_drift_detection_worker(self, worker_id):
-        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+    def add_drift_detection_worker(self, worker_id, service_type):
+        drift_detection_workers_key = '{}_{}'.format(RUNNING_DRIFT_DETECTION_WORKERS, service_type)
         self._redis.sadd(drift_detection_workers_key, worker_id)
 
-    def delete_drift_detection_worker(self, worker_id):
-        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+    def delete_drift_detection_worker(self, worker_id, service_type):
+        drift_detection_workers_key = '{}_{}'.format(RUNNING_DRIFT_DETECTION_WORKERS, service_type)
         self._redis.srem(drift_detection_workers_key, worker_id)
 
-    def get_drift_detection_workers(self):
-        drift_detection_workers_key = RUNNING_DRIFT_DETECTION_WORKERS
+    def get_drift_detection_workers(self, service_type):
+        drift_detection_workers_key = '{}_{}'.format(RUNNING_DRIFT_DETECTION_WORKERS, service_type)
         worker_ids = self._redis.smembers(drift_detection_workers_key)
         return [x.decoder() for x in worker_ids]
 
@@ -88,6 +88,29 @@ class Cache(object):
         train_job_ids = [x['train_job_id'] for x in queries]
         queries = [x['query'] for x in queries]
         return (query_ids, train_job_ids, queries)
+
+    def add_feedback_of_drift_detection_worker(self, worker_id, train_job_id, feedback_id, query_index, label):
+        feedback = json.dumps({
+            'id': feedback_id,
+            'train_job_id': train_job_id,
+            'query_index': query_index,
+            'label': label
+        })
+
+        worker_feedbacks_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        self._redis.rpush(worker_feedbacks_key, feedback)
+        return feedback_id
+
+    def pop_feedbacks_of_drift_detection_worker(self, worker_id, batch_size):
+        worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        feedbacks = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
+        self._redis.ltrim(worker_queries_key, len(feedbacks), -1)
+        feedbacks = [json.loads(x) for x in feedbacks]
+        feedback_ids = [x['id'] for x in feedbacks]
+        train_job_ids = [x['train_job_id'] for x in feedbacks]
+        query_indexes = [x['query_index'] for x in feedbacks]
+        labels = [x['label'] for x in feedbacks]
+        return (feedback_ids, train_job_ids, query_indexes, labels)
 
     def add_prediction_of_worker(self, worker_id, query_id, prediction):
         prediction = json.dumps({

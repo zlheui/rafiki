@@ -3,7 +3,7 @@ import logging
 import traceback
 
 from rafiki.db import Database
-from rafiki.constants import ServiceStatus, ServiceType
+from rafiki.constants import ServiceStatus
 from rafiki.config import MIN_SERVICE_PORT, MAX_SERVICE_PORT, DRIFT_DETECTOR_WORKER_PRELICAS
 
 from rafiki.container import DockerSwarmContainerManager 
@@ -16,10 +16,9 @@ class ServicesManager(object):
         self._container_manager = container_manager
         self._service_id = None
 
-    def create_drift_detection_service(self):
+    def create_drift_detection_service(self, service_type):
         replicas = self._compute_drift_detection_worker_replicas()
 
-        service_type = ServiceType.DRIFT_DETECTOR
         environment_vars = {
             'POSTGRES_HOST': os.environ['POSTGRES_HOST'],
             'POSTGRES_PORT': os.environ['POSTGRES_PORT'],

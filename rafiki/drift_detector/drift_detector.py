@@ -19,17 +19,15 @@ class Drift_Detector(object):
     def get_retrain_data_url(self):
         pass
 
-    def create_drift_detection_service(self):
-        service = self._services_manager.create_drift_detection_service()
-
-        
+    def create_drift_detection_service(self, service_type):
+        service = self._services_manager.create_drift_detection_service(service_type)
 
         return {
             'id': service.id
         }
 
     def stop_drift_detection_service(self):
-        service_id = self._services_manager.stop_drift_detection_service()
+        service_id = self._services_manager.stop_drift_detection_service(service_type)
 
         return {
             'id': service_id

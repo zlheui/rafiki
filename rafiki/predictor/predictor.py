@@ -4,12 +4,12 @@ import logging
 
 from rafiki.cache import Cache
 from rafiki.db import Database
-from rafiki.config import PREDICTOR_PREDICT_SLEEP
+from rafiki.config import PREDICTOR_PREDICT_SLEEP, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
+from rafiki.constants import ServiceType
 
 from .ensemble import ensemble_predictions
 import numpy as np
 
-from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 import os
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class Predictor(object):
         self._db.connect()
         train_job = self._db.get_train_job(self._train_job_id)
         if train_job.subscribe_to_drift_detection_service:
-            running_drift_detection_worker_ids = self._cache.get_drift_detection_workers()
+            running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_QUERY)
             if len(running_drift_detection_worker_ids) > 0:
                 con_drift_query_id = self._cache.add_query_of_drift_detection_worker(running_drift_detection_worker_ids[0], self._train_job_id, query)
         # End of Concept drift code

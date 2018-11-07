@@ -42,11 +42,11 @@ def hello():
     return jsonify({'hello':'hello'})
 
 
-@app.route('/<query_index>', methods=['POST'])
+@app.route('/<train_job_id>/<query_index>', methods=['POST'])
 @auth([UserType.ADMIN, UserType.APP_DEVELOPER])
-def create_feedback(auth, query_index):
+def create_feedback(auth, train_job_id, query_index):
     params = get_request_params()
-    return jsonify(feedback.create_feedback(query_index, **params))
+    return jsonify(feedback.create_feedback(train_job_id, query_index, **params))
 
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)

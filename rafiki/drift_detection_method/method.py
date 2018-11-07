@@ -16,11 +16,11 @@ class BaseMethod(abc.ABC):
         self._db = db
 
     @abc.abstractmethod
-    def update_on_queries(self):
+    def update_on_queries(self, train_job_id, queries):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_on_feedbacks(self):
+    def update_on_feedbacks(self, train_job_id, feedbacks):
         raise(NotImplementedError)
 
     def upload_queries(self, train_job_id, queries):

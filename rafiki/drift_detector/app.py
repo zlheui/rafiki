@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 import traceback
 
-from rafiki.constants import UserType
+from rafiki.constants import UserType, ServiceType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.utils.auth import generate_token, decode_token, UnauthorizedException, auth
 
@@ -40,11 +40,17 @@ def generate_user_token():
 def hello():
     return jsonify({'hello':'hello'})
 
-@app.route('/drift_detection', methods=['POST'])
+@app.route('/drift_detection/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_drift_detection_service(auth):
     with drift_detector:
-        return jsonify(drift_detector.create_drift_detection_service())
+        return jsonify(drift_detector.create_drift_detection_service(service_type=ServiceType.DRIFT_QUERY))
+
+@app.route('/drift_detection/feedback', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def create_drift_detection_service(auth):
+    with drift_detector:
+        return jsonify(drift_detector.create_drift_detection_service(service_type=ServiceType.DRIFT_FEEDBACK))
 
 @app.route('/drift_detection', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])

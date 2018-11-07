@@ -4,18 +4,23 @@ import os
 import uuid
 import traceback
 import pprint
+from rafiki.cache import Cache
 from rafiki.db import Database
+from rafiki.constants import ServiceType
 
 logger = logging.getLogger(__name__)
 
 
 class Feedback(object):
 
-    def __init__(self, db=Database()):
+    def __init__(self, db=Database(), cache=Cache()):
         self._db = db
+        self._cache = cache
 
+    def create_feedback(self, train_job_id, query_index, label=None):
+        logger.info('Received feedback:')
+        logger.info(train_job_id + '_' + query_index + '_' + label)
 
-    def create_feedback(self, query_index, label=None):
         is_added = False
         label_is_none = True
 
@@ -25,5 +30,11 @@ class Feedback(object):
             self._db.commit()
             label_is_none = False
             is_added = True
+
+            train_job = self._db.get_train_job(train_job_id)
+            if train_job.subscribe_to_drift_detection_service:
+                running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_FEEDBACK)
+                if len(running_drift_detection_worker_ids) > 0:
+                    con_drift_feedback_id = self._cache.add_feedback_of_drift_detection_worker(running_drift_detection_worker_ids[0], train_job_id, feedback.id, query_index, label)
         
         return {'query_index': query_index, 'is_added': is_added, 'label_is_none': label_is_none} 

@@ -11,6 +11,8 @@ from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
 from rafiki.constants import ServiceType
 
+logger = logging.getLogger(__name__)
+
 class DriftDetectionQueryWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
@@ -85,12 +87,12 @@ class DriftDetectionQueryWorker(object):
 
         while True:
             try:
-                detection_result = detector_inst.update_on_queries(train_job_id, queries)
-                if detection_result:
+                detection_result, query_index = detector_inst.update_on_queries(train_job_id, queries)
+                if detection_result and query_index is not None:
                     if self._client is None:
                         self._client = self._make_client()
 
-                    res = self._client.create_new_dataset(train_job_id)
+                    res = self._client.create_new_dataset(train_job_id, query_index)
                     if bool(res['created']):
                         # TODO: schedule admin to retrain the trail
                         pass

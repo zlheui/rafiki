@@ -10,12 +10,33 @@ from .services_manager import ServicesManager
 
 logger = logging.getLogger(__name__)
 
+
+
 class DataRepository(object):
 
     def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
         self._services_manager = ServicesManager(db, container_manager)
         self._cwd = '/'
+
+
+    def list_files(self, startpath):
+        output = ''
+        for root, dirs, files in os.walk(startpath):
+            level = root.replace(startpath, '').count(os.sep)
+            indent = ' ' * 4 * (level)
+            output += '{}{}/'.format(indent, os.path.basename(root)) + '\n'
+            subindent = ' ' * 4 * (level + 1)
+            for f in files:
+                output += '{}{}'.format(subindent, f) + '\n'
+        return output
+
+    def print_folder_structure(self):
+        output = self.list_files(self._cwd)
+
+        return {
+            'folder_structure': output
+        }
 
     def create_new_dataset(self, train_job_id, query_index):
         files = [e for e in os.listdir(os.path.join(self._cwd, 'dataset'))]

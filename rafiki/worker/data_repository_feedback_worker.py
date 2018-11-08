@@ -11,6 +11,8 @@ from rafiki.constants import ServiceType, TaskType
 
 import shutil
 
+logger = logging.getLogger(__name__)
+
 class DataRepositoryFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database()):
         self._cache = cache
@@ -27,7 +29,7 @@ class DataRepositoryFeedbackWorker(object):
 
         while True:
             (feedback_ids, train_job_ids, query_indexes, labels) = \
-                self._cache.pop_feedbacks_of_worker(self._service_id, DRIFT_DETECTION_BATCH_SIZE)
+                self._cache.pop_feedbacks_of_worker(self._service_id, DATA_REPOSITORY_BATCH_SIZE)
 
             if len(labels) > 0:
                 

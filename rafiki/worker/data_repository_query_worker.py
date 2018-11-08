@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 class DataRepositoryQueryWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database()):
         self._cache = cache

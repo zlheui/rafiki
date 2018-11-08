@@ -45,10 +45,10 @@ class ServicesManager(object):
 
         return service
 
-    def stop_drift_detector_service(self, service_type):
+    def stop_data_repository_service(self, service_type):
         service_id = None
         if service_type in self._service_ids:
-            service = self._db.get_service(self._service_id)
+            service = self._db.get_service(self._service_ids[service_type])
             service_id = service.id
             self._stop_service(service)
 
@@ -146,6 +146,6 @@ class ServicesManager(object):
 
         return port
 
-    def _compute_data_repository_worker_replicas():
+    def _compute_data_repository_worker_replicas(self):
         return DATA_REPOSITORY_WORKER_REPLICAS
 

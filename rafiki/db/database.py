@@ -420,11 +420,12 @@ class Database(object):
     # Detector for Concept drift
     ####################################
 
-    def create_detector(self, user_id, name, detector_file_bytes):
+    def create_detector(self, user_id, name, detector_file_bytes, detector_class):
         detector = Detector(
             user_id = user_id,
             name = name,
-            detector_file_bytes = detector_file_bytes
+            detector_file_bytes = detector_file_bytes,
+            detector_class=detector_class
         )
         self._session.add(detector)
         return detector

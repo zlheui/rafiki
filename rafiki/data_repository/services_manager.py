@@ -3,7 +3,7 @@ import logging
 import traceback
 
 from rafiki.db import Database
-from rafiki.constants import ServiceStatus
+from rafiki.constants import ServiceStatus, ServiceType
 from rafiki.config import MIN_SERVICE_PORT, MAX_SERVICE_PORT, DATA_REPOSITORY_WORKER_REPLICAS
 
 from rafiki.container import DockerSwarmContainerManager 
@@ -16,7 +16,7 @@ class ServicesManager(object):
         self._container_manager = container_manager
         self._service_id = None
 
-    def create_data_repository_service(self, service_type):
+    def create_data_repository_service(self, service_type=ServiceType.DATA_REPOSITORY):
         replicas = self._compute_data_repository_worker_replicas()
 
         environment_vars = {

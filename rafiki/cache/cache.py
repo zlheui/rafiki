@@ -7,6 +7,7 @@ RUNNING_INFERENCE_WORKERS = 'INFERENCE_WORKERS'
 QUERIES_QUEUE = 'QUERIES'
 PREDICTIONS_QUEUE = 'PREDICTIONS'
 RUNNING_DRIFT_DETECTION_WORKERS = 'DRIFT_DETECTION_WORKERS'
+RUNNING_DATA_REPOSITORY_WORKERS = 'DATA_REPOSITORY_WORKERS'
 
 class Cache(object):
     def __init__(self,
@@ -45,6 +46,19 @@ class Cache(object):
     def get_drift_detection_workers(self, service_type):
         drift_detection_workers_key = '{}_{}'.format(RUNNING_DRIFT_DETECTION_WORKERS, service_type)
         worker_ids = self._redis.smembers(drift_detection_workers_key)
+        return [x.decoder() for x in worker_ids]
+
+    def add_data_repository_worker(self, worker_id, service_type):
+        data_repository_workers_key = '{}_{}'.format(RUNNING_DATA_REPOSITORY_WORKERS, service_type)
+        self._redis.sadd(data_repository_workers_key, worker_id)
+
+    def delete_data_repository_worker(self, worker_id, service_type):
+        data_repository_workers_key = '{}_{}'.format(RUNNING_DATA_REPOSITORY_WORKERS, service_type)
+        self._redis.srem(data_repository_workers_key, worker_id)
+
+    def get_data_repository_workers(self, service_type):
+        data_repository_workers_key = '{}_{}'.format(RUNNING_DATA_REPOSITORY_WORKERS, service_type)
+        worker_ids = self._redis.smembers(data_repository_workers_key)
         return [x.decoder() for x in worker_ids]
 
     def add_query_of_worker(self, worker_id, query):

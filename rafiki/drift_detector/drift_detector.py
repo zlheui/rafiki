@@ -3,18 +3,16 @@ import logging
 import os
 import traceback
 
-import numpy as np
-from rafiki.cache import Cache
 from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager 
-
 from .services_manager import ServicesManager
 
 logger = logging.getLogger(__name__)
 
 class Drift_Detector(object):
-    def __init__(self, db=Database()):
+    def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
+        self._services_manager = ServicesManager(db, container_manager)
 
     def get_retrain_data_url(self):
         pass

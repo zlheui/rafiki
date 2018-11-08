@@ -46,12 +46,13 @@ class ServicesManager(object):
         return service
 
     def stop_drift_detector_service(self, service_type):
-        service = None
+        service_id = None
         if service_type in self._service_ids:
             service = self._db.get_service(self._service_id)
+            service_id = service.id
             self._stop_service(service)
 
-        return service
+        return service_id
 
     def _stop_service(self, service):
         if service.container_service_id is not None:

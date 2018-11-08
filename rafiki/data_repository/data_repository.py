@@ -15,12 +15,19 @@ class DataRepository(object):
     def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
         self._services_manager = ServicesManager(db, container_manager)
+        self._cwd = '/'
 
     def create_new_dataset(self, train_job_id, query_index):
-        output = [e for e in os.listdir(os.path.join(self._cwd, train_job_id, 'query'))]
+        files = [e for e in os.listdir(os.path.join(self._cwd, 'dataset'))]
+
+        if len(files) == 0:
+            # TODO: create train_URI and test_URI
+            pass
 
         return {
-            'queries': output
+            'created': True,
+            'train_dataset_uri': 'abc',
+            'test_dataset_uri': 'abc'
         }
 
     def create_data_repository_service(self, service_type):

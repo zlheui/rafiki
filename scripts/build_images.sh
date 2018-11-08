@@ -24,4 +24,8 @@ title "Building Rafiki Feedback Server's image..."
 docker build -t $RAFIKI_IMAGE_FEEDBACK:$RAFIKI_VERSION -f ./dockerfiles/feedback.Dockerfile $PWD || exit 1 
 title "Building Rafiki Data Repository Server's image..."
 docker build -t $RAFIKI_IMAGE_DATA_REPOSITORY:$RAFIKI_VERSION -f ./dockerfiles/data_repository.Dockerfile $PWD || exit 1 
+title "Building Rafiki Detector Worker's image..."
+docker build -t $RAFIKI_IMAGE_DRIFT_DETECTOR_WORKER:$RAFIKI_VERSION -f ./dockerfiles/detector_worker.Dockerfile $PWD || exit 1 
+title "Building Rafiki Repository Worker's image..."
+docker build -t $RAFIKI_IMAGE_DATA_REPOSITORY_WORKER:$RAFIKI_VERSION -f ./dockerfiles/repository_worker.Dockerfile $PWD || exit 1 
 echo "Finished building all Rafiki's images successfully!"

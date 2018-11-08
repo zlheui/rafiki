@@ -40,12 +40,6 @@ def generate_user_token():
 def hello():
     return jsonify({'hello':'hello'})
 
-@app.route('/<train_job_id>/', methods=['GET'])
-@auth([UserType.ADMIN, UserType.APP_DEVELOPER])
-def create_new_dataset(auth, train_job_id):
-    params = get_request_params()
-    return jsonify(data_repository.create_new_dataset(train_job_id, **params))
-
 @app.route('/data_repository/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_drift_detection_service(auth):
@@ -69,6 +63,12 @@ def create_drift_detection_service(auth):
 def stop_drift_detection_service(auth):
     with data_repository:
         return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
+
+@app.route('/create_new_dataset/<train_job_id>', methods=['GET'])
+def create_new_dataset(auth, train_job_id):
+    params = get_request_params()
+    with data_repository:
+        return jsonify(data_repository.create_new_dataset(train_job_id, **params))
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)
 @app.errorhandler(Exception)

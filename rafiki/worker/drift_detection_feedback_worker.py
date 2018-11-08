@@ -11,21 +11,6 @@ from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
 from rafiki.constants import ServiceType
 
-
-def update_on_feedbacks(clazz, train_job_id, feedbacks):
-    detector_inst = clazz()
-    detector_inst.init()
-
-    while True:
-        try:
-            detector_inst.update_on_feedbacks(train_job_id, feedbacks)
-        except:
-            time.sleep(DRIFT_WORKER_SLEEP)
-            continue
-        else:
-            break
-
-
 class DriftDetectionFeedbackWorker(Object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
@@ -91,3 +76,43 @@ class DriftDetectionFeedbackWorker(Object):
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
+
+    def update_on_feedbacks(clazz, train_job_id, feedbacks):
+        detector_inst = clazz()
+        detector_inst.init()
+
+        while True:
+            try:
+                detection_result, query_index = detector_inst.update_on_feedbacks(train_job_id, feedbacks)
+                if detection_result and query_index is not None:
+                    if self._client is None:
+                        self._client = self._make_client()
+
+                    res = self._client.create_new_dataset(train_job_id, query_index)
+                    if bool(res['created']):
+                        # TODO: schedule Admin to retrain the trail
+                        pass
+
+            except:
+                time.sleep(DRIFT_WORKER_SLEEP)
+                continue
+            else:
+                break
+
+    def _make_client(self):
+        admin_host = os.environ['ADMIN_HOST']
+        admin_port = os.environ['ADMIN_PORT']
+        advisor_host = os.environ['ADVISOR_HOST']
+        advisor_port = os.environ['ADVISOR_PORT']
+        data_repository_host = os.environ['DATA_REPOSITORY_HOST']
+        data_repository_port = os.environ['DATA_REPOSITORY_PORT']
+        superadmin_email = SUPERADMIN_EMAIL
+        superadmin_password = SUPERADMIN_PASSWORD
+        client = Client(admin_host=admin_host, 
+                        admin_port=admin_port, 
+                        advisor_host=advisor_host,
+                        advisor_port=advisor_port,
+                        data_repository_host=data_repository_host,
+                        data_repository_port=data_repository_port)
+        client.login(email=superadmin_email, password=superadmin_password)
+        return client

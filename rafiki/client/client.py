@@ -348,10 +348,10 @@ class Client(object):
     # Data Repository
     ####################################
 
-    def create_query(self, train_job_id, data_point):
-        data = self._post('/'+train_job_id+'/query/',
+    def create_dataset(self, train_job_id, query_index):
+        data = self._post('/create_dataset/'+train_job_id,
                         target='data_repository', json={
-                            'data_point': data_point
+                            'query_index': query_index
                         })
         return data
 

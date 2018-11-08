@@ -27,6 +27,7 @@ export RAFIKI_IMAGE_DRIFT_DETECTOR=rafikiai/rafiki_drift_detector
 export RAFIKI_IMAGE_FEEDBACK=rafikiai/rafiki_feedback
 export RAFIKI_IMAGE_DATA_REPOSITORY=rafikiai/rafiki_data_repository
 export RAFIKI_IMAGE_DRIFT_DETECTOR_WORKER=rafikiai/rafiki_drift_detector_worker
+export RAFIKI_IMAGE_DATA_REPOSITORY_WORKER=rafikiai/rafiki_data_repository_worker
 export IMAGE_POSTGRES=postgres:10.5
 export IMAGE_REDIS=redis:5.0-rc
 export RAFIKI_VERSION=0.1.2

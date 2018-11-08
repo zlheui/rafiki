@@ -11,7 +11,7 @@ from rafiki.constants import ServiceType, TaskType
 
 import shutil
 
-class DataRepositoryFeedbackWorker(Object):
+class DataRepositoryFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database()):
         self._cache = cache
         self._db = db

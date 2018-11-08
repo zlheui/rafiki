@@ -11,7 +11,7 @@ from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
 from rafiki.constants import ServiceType
 
-class DriftDetectionQueryWorker(Object):
+class DriftDetectionQueryWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
@@ -107,7 +107,7 @@ class DriftDetectionQueryWorker(Object):
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue
-            else
+            else:
                 break
 
     def _make_client(self):

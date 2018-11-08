@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, Float, ForeignKey, Integer, Binary, DateTime, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, Float, ForeignKey, Integer, Binary, DateTime, Boolean, UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.dialects.postgresql import JSON
 import uuid
 import datetime
@@ -125,6 +125,7 @@ class QueryStats(Base):
 class Prediction(Base):
     __tablename__ = 'prediction'
     __table_args__ = (
+        PrimaryKeyConstraint('id', 'trial_id')
         UniqueConstraint('query_index', 'trial_id'),
     )
 

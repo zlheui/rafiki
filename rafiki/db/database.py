@@ -409,10 +409,11 @@ class Database(object):
         return prediction
 
     def update_prediction_index(self, query_id, query_index):
-        prediction = self.get_prediction(query_id)
-        prediction.query_index = query_index
-        self._session.add(prediction)
-        return prediction
+        predictions = self._session.query(Prediction).filter(Prediction.id == query_id).all()
+        for prediction in predictions:
+            prediction.query_index = query_index
+            self._session.add(prediction)
+        return query_index
 
     ####################################
     # Feedback for Concept drift

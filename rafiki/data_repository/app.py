@@ -42,25 +42,25 @@ def hello():
 
 @app.route('/data_repository/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def create_drift_detection_service(auth):
+def create_data_repository_query_service(auth):
     with data_repository:
         return jsonify(data_repository.create_data_repository_service(ServiceType.REPOSITORY_QUERY))
 
 @app.route('/data_repository/stop/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def stop_drift_detection_service(auth):
+def stop_data_repository_query_service(auth):
     with data_repository:
         return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_QUERY))
 
 @app.route('/data_repository/feedback', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def create_drift_detection_service(auth):
+def create_data_repository_feedback_service(auth):
     with data_repository:
         return jsonify(data_repository.create_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
 
 @app.route('/data_repository/stop/feedback', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def stop_drift_detection_service(auth):
+def stop_data_repository_feedback_service(auth):
     with data_repository:
         return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
 

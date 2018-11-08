@@ -26,28 +26,12 @@ class Drift_Detector(object):
             'id': service.id
         }
 
-    def stop_drift_detection_service(self):
+    def stop_drift_detection_service(self, service_type):
         service_id = self._services_manager.stop_drift_detection_service(service_type)
 
         return {
             'id': service_id
         }
-
-    # # this is a sequential way to do detection for a trial_id
-    # # TODO: make it multi thread
-    # # naively users can send multiple posts to detect_with_detector_name()
-    # def detect(self, trial_id):
-    #     detector_subs = self._db.get_detector_subscriptions_by_trial_id(trail_id)
-    #     for sub in detector_subs:
-    #         self.detect_with_detector_name(trial_id, sub.detector_name)
-
-
-    # def detect_with_detector_name(self, trial_id, detector_name):
-    #     if detector_name not in self._drift_detectors:
-    #         detector = self._db.get_detector_by_name(detector_name)
-    #         clazz = load_detector_class(detector.detector_file_bytes, detector.detector_class)
-    #         self._drift_detectors[detector_name] = clazz
-        
 
     def subscribe_detector(self, trial_id, detector_name):
         detector_sub = self._db.create_detector_sub(

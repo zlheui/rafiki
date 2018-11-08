@@ -20,6 +20,7 @@ def update_on_queries(clazz, train_job_id, queries):
         try:
             detector_inst.update_on_queries(train_job_id, queries)
         except:
+            time.sleep(DRIFT_WORKER_SLEEP)
             continue
         else:
             break
@@ -28,6 +29,7 @@ def update_on_queries(clazz, train_job_id, queries):
         try:
             detector_inst.upload_queries(train_job_id, queries)
         except:
+            time.sleep(DRIFT_WORKER_SLEEP)
             continue
         else
             break

@@ -20,6 +20,7 @@ def update_on_feedbacks(clazz, train_job_id, feedbacks):
         try:
             detector_inst.update_on_feedbacks(train_job_id, feedbacks)
         except:
+            time.sleep(DRIFT_WORKER_SLEEP)
             continue
         else:
             break

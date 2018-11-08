@@ -41,14 +41,18 @@ class DataRepositoryQueryWorker(object):
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries:
+                            # update query index in the database
+                            self._db.update_prediction_index(query[0], str(tmp_index))
                             if len(np.array(query).shape) == 2:
-                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query), cmap=cm.gray)
+                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
                             else:
-                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query))
+                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]))
                             tmp_index += 1
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries:
+                            # update query index in the database
+                            self._db.update_prediction_index(query[0], str(tmp_index))
                             with open(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.csv'), 'w') as f:
                                 f.write(','.join([str(e) for e in query]))
                             tmp_index += 1

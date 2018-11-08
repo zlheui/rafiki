@@ -43,6 +43,7 @@ class Predictor(object):
         # Concept drift detection: record query (only one worker will be available)
         self._db.connect()
         train_job = self._db.get_train_job(self._train_job_id)
+        con_drift_query_id = None
         if train_job.subscribe_to_drift_detection_service:
             running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_QUERY)
             if len(running_drift_detection_worker_ids) > 0:
@@ -69,7 +70,7 @@ class Predictor(object):
                         con_drift_pred_indice = np.argmax(prediction, axis=0)
                         con_drift_prediction = self._worker_to_predict_label_mapping[worker_id][str(con_drift_pred_indice)] 
                         con_drift_prediction = self._db.create_prediction(
-                            query_index=con_drift_query_index,
+                            id=con_drift_query_id,
                             trial_id=con_drift_trial_id,
                             predict=con_drift_prediction,
                         )

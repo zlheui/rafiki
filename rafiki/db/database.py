@@ -395,12 +395,22 @@ class Database(object):
     # Predictions for Concept drift
     ####################################
 
-    def create_prediction(self, query_index, trial_id, predict):
+    def create_prediction(self, id, trial_id, predict):
         prediction = Prediction(
-            query_index = query_index,
+            id = id,
             trial_id = trial_id,
             predict = predict
         )
+        self._session.add(prediction)
+        return prediction
+
+    def get_prediction(self, id):
+        prediction = self._session.query(Prediction).get(id)
+        return prediction
+
+    def update_prediction_index(self, query_id, query_index):
+        prediction = self.get_prediction(query_id)
+        prediction.query_index = query_index
         self._session.add(prediction)
         return prediction
 

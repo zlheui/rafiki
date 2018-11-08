@@ -37,24 +37,24 @@ class DriftDetectionQueryWorker(object):
                 logger.info(['{}_{}'.format(a,b) for a,b in zip(train_job_ids, queries)])
 
                 train_job_id_to_queries = {}
-                for (train_job_id, query) in zip(train_job_ids, queries):
+                for (train_job_id, query_id, query) in zip(train_job_ids, query_ids, queries):
                     if train_job_id in train_job_id_to_queries:
-                        train_job_id_to_queries[train_job_id].append(query)
+                        train_job_id_to_queries[train_job_id].append((query_id, query))
                     else:
-                        train_job_id_to_queries[train_job_id] = [query]
+                        train_job_id_to_queries[train_job_id] = [(query_id, query)]
 
                 train_job_id_to_detection_methods = {}
                 detection_methods = []
                 self._db.connect()
                 for train_job_id,_ in train_job_id_to_queries.items():
-                    trials = self._db.get_trials_of_train_job()
+                    trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_detection_methods[train_job_id] = []
                     for trial in trials:
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)
                         for sub in detector_subs:
-                            if sub.name not in train_job_id_to_detection_methods[train_job_id]:
+                            if sub.detector_name not in train_job_id_to_detection_methods[train_job_id]:
                                 train_job_id_to_detection_methods[train_job_id].append(sub.name)
-                            if sub.name not in self._detectors and sub.name not in detection_methods:
+                            if sub.detector_name not in self._detectors and sub.detector_name not in detection_methods:
                                 detection_methods.append(sub.name)
                 self._db.commit()
 

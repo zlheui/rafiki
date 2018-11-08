@@ -46,7 +46,7 @@ class Cache(object):
     def get_drift_detection_workers(self, service_type):
         drift_detection_workers_key = '{}_{}'.format(RUNNING_DRIFT_DETECTION_WORKERS, service_type)
         worker_ids = self._redis.smembers(drift_detection_workers_key)
-        return [x.decoder() for x in worker_ids]
+        return [x.decode() for x in worker_ids]
 
     def add_data_repository_worker(self, worker_id, service_type):
         data_repository_workers_key = '{}_{}'.format(RUNNING_DATA_REPOSITORY_WORKERS, service_type)
@@ -59,7 +59,7 @@ class Cache(object):
     def get_data_repository_workers(self, service_type):
         data_repository_workers_key = '{}_{}'.format(RUNNING_DATA_REPOSITORY_WORKERS, service_type)
         worker_ids = self._redis.smembers(data_repository_workers_key)
-        return [x.decoder() for x in worker_ids]
+        return [x.decode() for x in worker_ids]
 
     def add_query_of_worker(self, worker_id, query):
         query_id = str(uuid.uuid4())

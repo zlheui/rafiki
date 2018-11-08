@@ -32,10 +32,14 @@ class DataRepository(object):
         return output
 
     def print_folder_structure(self):
-        output = self.list_files(self._cwd)
+        query_structure = self.list_files(os.path.join(self._cwd, 'query'))
+        feedback_structure = self.list_files(os.path.join(self._cwd, 'feedback'))
+        dataset_structure = self.list_files(os.path.join(self._cwd, 'dataset'))
 
         return {
-            'folder_structure': output
+            'query_structure': query_structure,
+            'feedback_structure': feedback_structure,
+            'dataset_structure': dataset_structure
         }
 
     def create_new_dataset(self, train_job_id, query_index):

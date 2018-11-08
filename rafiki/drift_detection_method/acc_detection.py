@@ -12,11 +12,11 @@ class AccDetector(BaseMethod):
     '''
 
     def update_on_queries(self, train_job_id, queries):
-        return False
+        return False, None
 
 
     def update_on_feedbacks(self, train_job_id, feedbacks):
-        return False
+        return False, None
 
 
 

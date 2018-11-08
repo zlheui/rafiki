@@ -77,7 +77,7 @@ class DriftDetectionFeedbackWorker(object):
 
                 logger.info('finish multiprocessing')
         
-        time.sleep(DRIFT_WORKER_SLEEP)
+            time.sleep(DRIFT_WORKER_SLEEP)
 
     def stop(self):
         # Remove from set of running workers
@@ -87,6 +87,7 @@ class DriftDetectionFeedbackWorker(object):
         detector_inst = clazz()
         detector_inst.init()
 
+        logger.info('detect real concept drift')
         while True:
             try:
                 detection_result, query_index = detector_inst.update_on_feedbacks(train_job_id, feedbacks)

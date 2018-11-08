@@ -77,7 +77,7 @@ class DriftDetectionQueryWorker(object):
                     proc.join()
                 logger.info('finish multiprocessing')
 
-        time.sleep(DRIFT_WORKER_SLEEP)
+            time.sleep(DRIFT_WORKER_SLEEP)
 
     def stop(self):
         # Remove from set of running workers
@@ -87,6 +87,8 @@ class DriftDetectionQueryWorker(object):
     def _update_on_queries(clazz, train_job_id, queries):
         detector_inst = clazz()
         detector_inst.init()
+
+        logger.info('detect covariate drift')
 
         while True:
             try:
@@ -106,6 +108,7 @@ class DriftDetectionQueryWorker(object):
             else:
                 break
 
+        logger.info('upload data')
         while True:
             try:
                 detector_inst.upload_queries(train_job_id, queries)

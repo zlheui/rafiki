@@ -355,6 +355,34 @@ class Client(object):
                         })
         return data
 
+    def create_data_repository_service(self, service_type):
+        '''
+        creates data repository service
+        '''
+        path = '/'
+        if service_type == ServiceType.REPOSITORY_QUERY:
+            path += 'data_repository/query'
+        elif service_type == ServiceType.REPOSITORY_FEEDBACK:
+            path += 'data_repository/feedback'
+        else:
+            raise(Exception('Unknown data repository service: {}'.format(service_type)))
+        data = self._post(path, target='data_repository')
+        return data
+
+    def stop_data_repository_service(self, service_type):
+        '''
+        stops data repository service
+        '''
+        path = '/'
+        if service_type == ServiceType.REPOSITORY_QUERY:
+            path += 'data_repository/stop/query'
+        elif service_type == ServiceType.REPOSITORY_FEEDBACK:
+            path += 'data_repository/stop/feedback'
+        else:
+            raise(Exception('Unknown data repository service: {}'.format(service_type)))
+        data = self._post(path, target='data_repository')
+        return data
+
     ####################################
     # Feedback
     ####################################
@@ -400,6 +428,20 @@ class Client(object):
             path += 'drift_detection/query'
         elif service_type == ServiceType.DRIFT_FEEDBACK:
             path += 'drift_detection/feedback'
+        else:
+            raise(Exception('Unknown drift detection service: {}'.format(service_type)))
+        data = self._post(path, target='drift_detector')
+        return data
+
+    def stop_drift_detection_service(self, service_type):
+        '''
+        stops drift detection service
+        '''
+        path = '/'
+        if service_type == ServiceType.DRIFT_QUERY:
+            path += 'drift_detection/stop/query'
+        elif service_type == ServiceType.DRIFT_FEEDBACK:
+            path += 'drift_detection/stop/feedback'
         else:
             raise(Exception('Unknown drift detection service: {}'.format(service_type)))
         data = self._post(path, target='drift_detector')

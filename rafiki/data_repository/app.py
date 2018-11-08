@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 import traceback
 
-from rafiki.constants import UserType
+from rafiki.constants import UserType, ServiceType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.utils.auth import generate_token, decode_token, UnauthorizedException, auth
 
@@ -46,17 +46,29 @@ def create_new_dataset(auth, train_job_id):
     params = get_request_params()
     return jsonify(data_repository.create_new_dataset(train_job_id, **params))
 
-@app.route('/data_repository', methods=['POST'])
+@app.route('/data_repository/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_drift_detection_service(auth):
     with data_repository:
-        return jsonify(data_repository.create_data_repository_service())
+        return jsonify(data_repository.create_data_repository_service(ServiceType.REPOSITORY_QUERY))
 
-@app.route('/data_repository/stop', methods=['POST'])
+@app.route('/data_repository/stop/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def stop_drift_detection_service(auth):
     with data_repository:
-        return jsonify(data_repository.stop_data_repository_service())
+        return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_QUERY))
+
+@app.route('/data_repository/feedback', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def create_drift_detection_service(auth):
+    with data_repository:
+        return jsonify(data_repository.create_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
+
+@app.route('/data_repository/stop/feedback', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def stop_drift_detection_service(auth):
+    with data_repository:
+        return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)
 @app.errorhandler(Exception)

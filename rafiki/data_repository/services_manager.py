@@ -14,9 +14,9 @@ class ServicesManager(object):
     def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
         self._container_manager = container_manager
-        self._service_id = None
+        self._service_ids = {}
 
-    def create_data_repository_service(self, service_type=ServiceType.DATA_REPOSITORY):
+    def create_data_repository_service(self, service_type):
         replicas = self._compute_data_repository_worker_replicas()
 
         environment_vars = {
@@ -41,16 +41,18 @@ class ServicesManager(object):
             environment_vars=environment_vars
         )
 
-        self._service_id = service.id
+        self._service_ids[service_type] = service.id
 
         return service
 
-    def stop_data_repository_service(self):
-        if self._service_id is not None:
+    def stop_drift_detector_service(self, service_type):
+        service_id = None
+        if service_type in self._service_ids:
             service = self._db.get_service(self._service_id)
+            service_id = service.id
             self._stop_service(service)
 
-        return self._service_id
+        return service_id
 
     def _stop_service(self, service):
         if service.container_service_id is not None:

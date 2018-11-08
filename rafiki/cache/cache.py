@@ -103,7 +103,28 @@ class Cache(object):
         queries = [x['query'] for x in queries]
         return (query_ids, train_job_ids, queries)
 
-    def add_feedback_of_drift_detection_worker(self, worker_id, train_job_id, feedback_id, query_index, label):
+    def add_queries_of_data_repository_worker(self, worker_id, train_job_id, query_index, queries):
+        data = json.dumps({
+            'train_job_id': train_job_id,
+            'query_index': query_index,
+            'query': queries
+        })
+
+        worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        self._redis.rpush(worker_queries_key, data)
+        return query_index
+
+    def pop_queries_of_data_repository_worker(self, worker_id, batch_size):
+        worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
+        data = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
+        self._redis.ltrim(worker_queries_key, len(data), -1)
+        data = [json.loads(x) for x in data]
+        train_job_ids = [x['train_job_id'] for x in data]
+        queries = [x['query'] for x in data]
+        query_indexes = [x['query_index'] for x in data]
+        return (train_job_ids, query_indexes, queries)
+
+    def add_feedback_of_worker(self, worker_id, train_job_id, feedback_id, query_index, label):
         feedback = json.dumps({
             'id': feedback_id,
             'train_job_id': train_job_id,
@@ -115,7 +136,7 @@ class Cache(object):
         self._redis.rpush(worker_feedbacks_key, feedback)
         return feedback_id
 
-    def pop_feedbacks_of_drift_detection_worker(self, worker_id, batch_size):
+    def pop_feedbacks_of_worker(self, worker_id, batch_size):
         worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
         feedbacks = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
         self._redis.ltrim(worker_queries_key, len(feedbacks), -1)

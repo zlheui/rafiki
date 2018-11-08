@@ -7,6 +7,7 @@ from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager
 from .services_manager import ServicesManager
 
+
 logger = logging.getLogger(__name__)
 
 class DataRepository(object):
@@ -15,22 +16,22 @@ class DataRepository(object):
         self._db = db
         self._services_manager = ServicesManager(db, container_manager)
 
-    def create_new_dataset(self, train_job_id):
+    def create_new_dataset(self, train_job_id, query_index):
         output = [e for e in os.listdir(os.path.join(self._cwd, train_job_id, 'query'))]
 
         return {
             'queries': output
         }
 
-    def create_data_repository_service(self):
-        service = self._services_manager.create_data_repository_service()
+    def create_data_repository_service(self, service_type):
+        service = self._services_manager.create_data_repository_service(service_type)
 
         return {
             'id': service.id
         }
 
-    def stop_data_repository_service(self):
-        service_id = self._services_manager.stop_data_repository_service()
+    def stop_data_repository_service(self, service_type):
+        service_id = self._services_manager.stop_data_repository_service(service_type)
 
         return {
             'id': service_id

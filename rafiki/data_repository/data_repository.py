@@ -31,15 +31,11 @@ class DataRepository(object):
                 output += '{}{}'.format(subindent, f) + '\n'
         return output
 
-    def print_folder_structure(self):
-        query_structure = self.list_files(os.path.join(self._cwd, 'query'))
-        feedback_structure = self.list_files(os.path.join(self._cwd, 'feedback'))
-        dataset_structure = self.list_files(os.path.join(self._cwd, 'dataset'))
+    def print_folder_structure(self, train_job_id):
+        folder_structure = self.list_files(os.path.join(self._cwd, train_job_id))
 
         return {
-            'query_structure': query_structure,
-            'feedback_structure': feedback_structure,
-            'dataset_structure': dataset_structure
+            'folder_structure': folder_structure
         }
 
     def create_new_dataset(self, train_job_id, query_index):

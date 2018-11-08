@@ -51,12 +51,13 @@ class DriftDetectionFeedbackWorker(object):
                     for trial in trials:
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)
                         for sub in detector_subs:
-                            if sub.name not in train_job_id_to_detection_methods[train_job_id]:
-                                train_job_id_to_detection_methods[train_job_id].append(sub.name)
-                            if sub.name not in self._detectors and sub.name not in detection_methods:
-                                detection_methods.append(sub.name)
+                            if sub.detector_name not in train_job_id_to_detection_methods[train_job_id]:
+                                train_job_id_to_detection_methods[train_job_id].append(sub.detector_name)
+                            if sub.detector_name not in self._detectors and sub.detector_name not in detection_methods:
+                                detection_methods.append(sub.detector_name)
                 self._db.commit()
 
+                logger.info('load new detection classes')
                 # load new detection classes
                 for detector_name in detection_methods:
                     detector = self._db.get_detector_by_name(detector_name)
@@ -64,14 +65,17 @@ class DriftDetectionFeedbackWorker(object):
                     self._drift_detectors[detector_name] = clazz
                 self._db.commit()
 
+                logger.info('start multiprocessing')
                 procs = []
                 for train_job_id,feedbacks in train_job_id_to_feedbacks.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        proc = Process(target=update_on_feedbacks, args=(self._detectors[detector_method], train_job_id, feedbacks))
+                        proc = Process(target=self._update_on_feedbacks, args=(self._detectors[detector_method], train_job_id, feedbacks))
                         procs.append(proc)
                         proc.start()
                 for proc in procs:
                     proc.join()
+
+                logger.info('finish multiprocessing')
         
         time.sleep(DRIFT_WORKER_SLEEP)
 
@@ -79,7 +83,7 @@ class DriftDetectionFeedbackWorker(object):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
 
-    def update_on_feedbacks(clazz, train_job_id, feedbacks):
+    def _update_on_feedbacks(self, clazz, train_job_id, feedbacks):
         detector_inst = clazz()
         detector_inst.init()
 

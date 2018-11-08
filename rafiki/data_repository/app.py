@@ -36,10 +36,10 @@ def generate_user_token():
         'token': token
     })
 
-@app.route('/print_folder_structure', methods=['GET'])
-def print_folder_structure():
+@app.route('/print_folder_structure/<train_job_id>', methods=['GET'])
+def print_folder_structure(train_job_id):
     with data_repository:
-        return jsonify(data_repository.print_folder_structure())
+        return jsonify(data_repository.print_folder_structure(train_job_id=train_job_id))
 
 @app.route('/hello', methods=['GET'])
 def hello():

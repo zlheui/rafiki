@@ -38,6 +38,7 @@ class DataRepositoryQueryWorker(object):
                 for query_index, train_job_id in zip(query_indexes, train_job_ids):
                     train_job = self._db.get_train_job(train_job_id)
                     self._create_query_folder(train_job_id)
+                    logger.info('storing data ...')
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries:
@@ -58,6 +59,7 @@ class DataRepositoryQueryWorker(object):
                             tmp_index += 1
                     else:
                         raise NotImplementedError
+                    logger.info('finish storing')
 
             time.sleep(DATA_REPOSITORY_SLEEP)
 

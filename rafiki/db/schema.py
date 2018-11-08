@@ -125,7 +125,7 @@ class QueryStats(Base):
 class Prediction(Base):
     __tablename__ = 'prediction'
     __table_args__ = (
-        PrimaryKeyConstraint('id', 'trial_id')
+        PrimaryKeyConstraint('id', 'trial_id'),
         UniqueConstraint('query_index', 'trial_id'),
     )
 

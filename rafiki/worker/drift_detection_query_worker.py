@@ -53,18 +53,20 @@ class DriftDetectionQueryWorker(object):
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)
                         for sub in detector_subs:
                             if sub.detector_name not in train_job_id_to_detection_methods[train_job_id]:
-                                train_job_id_to_detection_methods[train_job_id].append(sub.name)
+                                train_job_id_to_detection_methods[train_job_id].append(sub.detector_name)
                             if sub.detector_name not in self._detectors and sub.detector_name not in detection_methods:
-                                detection_methods.append(sub.name)
+                                detection_methods.append(sub.detector_name)
                 self._db.commit()
 
+                logger.info('load new detection classes')
                 # load new detection classes
                 for detector_name in detection_methods:
                     detector = self._db.get_detector_by_name(detector_name)
                     clazz = load_detector_class(detector.detector_file_bytes, detector.detector_class)
-                    self._drift_detectors[detector_name] = clazz
+                    self._detectors[detector_name] = clazz
                 self._db.commit()
 
+                logger.info('multiprocessing')
                 procs = []
                 for train_job_id,queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
@@ -73,7 +75,8 @@ class DriftDetectionQueryWorker(object):
                         proc.start()
                 for proc in procs:
                     proc.join()
-        
+                logger.info('finish multiprocessing')
+
         time.sleep(DRIFT_WORKER_SLEEP)
 
     def stop(self):

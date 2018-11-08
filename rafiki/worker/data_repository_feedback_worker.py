@@ -40,6 +40,7 @@ class DataRepositoryFeedbackWorker(object):
                     if not os.path.exists(os.path.join(self._cwd, train_job_id, 'feedback', label)):
                         os.makedirs(os.path.join(self._cwd, train_job_id, 'feedback', label))
                     
+                    logger.info('storing data')
                     # move unlabeled data to feedback folder
                     train_job = self._db.get_train_job(train_job_id)
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
@@ -50,6 +51,7 @@ class DataRepositoryFeedbackWorker(object):
                          os.path.join(self._cwd, train_job_id, 'feedback', label, str(query_index)+'.csv'))
                     else:
                         raise NotImplementedError
+                    logger.info('finish storing')
 
             time.sleep(DATA_REPOSITORY_SLEEP)
 

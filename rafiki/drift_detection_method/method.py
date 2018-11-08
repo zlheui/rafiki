@@ -17,7 +17,7 @@ class BaseMethod(abc.ABC):
 
     @abc.abstractmethod
     def update_on_queries(self, train_job_id, queries):
-        raise NotImplementedError
+        raise(NotImplementedError)
 
     @abc.abstractmethod
     def update_on_feedbacks(self, train_job_id, feedbacks):
@@ -37,3 +37,5 @@ class BaseMethod(abc.ABC):
         self._db.commit()
 
         # TODO: use cache to send the queries to data repository
+        
+        

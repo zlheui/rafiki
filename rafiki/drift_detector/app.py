@@ -52,12 +52,6 @@ def create_drift_detection_service(auth):
     with drift_detector:
         return jsonify(drift_detector.create_drift_detection_service(service_type=ServiceType.DRIFT_FEEDBACK))
 
-@app.route('/drift_detection', methods=['POST'])
-@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def create_drift_detection_service(auth):
-    with drift_detector:
-        return jsonify(drift_detector.create_drift_detection_service())
-
 @app.route('/drift_detection/stop', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def stop_drift_detection_service(auth):

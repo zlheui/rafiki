@@ -1,7 +1,7 @@
 import requests
 import pprint
 
-from rafiki.constants import BudgetType
+from rafiki.constants import BudgetType, ServiceType
 
 class Client(object):
 
@@ -17,7 +17,8 @@ class Client(object):
     def __init__(self, admin_host='localhost', admin_port=8000,
                 advisor_host='localhost', advisor_port=8001,
                 data_repository_host='localhost', data_repository_port=8007,
-                drift_detector_host='localhost', drift_detector_port=8005):
+                drift_detector_host='localhost', drift_detector_port=8005,
+                drift_feedback_host='localhost', drift_feedback_port=8006):
         self._admin_host = admin_host
         self._admin_port = admin_port
         self._advisor_host = advisor_host
@@ -26,6 +27,8 @@ class Client(object):
         self._data_repository_port = data_repository_port
         self._drift_detector_host = drift_detector_host
         self._drift_detector_port = drift_detector_port
+        self._drifit_feedback_host = drift_feedback_host
+        self._drifit_feedback_port = drift_feedback_port
         self._token = None
 
     def login(self, email, password):
@@ -353,6 +356,17 @@ class Client(object):
         return data
 
     ####################################
+    # Feedback
+    ####################################
+
+    def create_feedback(self, train_job_id, query_index, label):
+        data = self._post('/'+train_job_id+'/'+query_index,
+                        target='feedback', json={
+                            'label':label
+                        })
+        return data
+
+    ####################################
     # Drift Detector
     ####################################
 
@@ -375,6 +389,25 @@ class Client(object):
                 'detector_class': detector_class
             }
         )
+        return data
+
+    def create_drift_detection_service(self, service_type):
+        '''
+        creates drift detection service
+        '''
+        path = '/'
+        if service_type == ServiceType.DRIFT_QUERY:
+            path += 'drift_detection/query'
+        elif service_type == ServiceType.DRIFT_FEEDBACK:
+            path += 'drift_detection/feedback'
+        else:
+            raise(Exception('Unknown drift detection service: {}'.format(service_type)))
+        data = self._post(path, target='drift_detector')
+        return data
+
+    def subscribe_drift_detection_service(self, trial_id, detector_name):
+        data = self._post('/subscribe/'+trial_id+'/'+detector_name,
+                        target='drift_detector')
         return data
 
     ####################################
@@ -426,6 +459,8 @@ class Client(object):
             url = 'http://{}:{}{}'.format(self._data_repository_host, self._data_repository_port, path)
         elif target == 'drift_detector':
             url = 'http://{}:{}{}'.format(self._drift_detector_host, self._drift_detector_port, path)
+        elif target == 'feedback':
+            url = 'http://{}:{}{}'.format(self._feedback_host, self._feedback_port, path)
         else:
             raise Exception('Invalid URL target: {}'.format(target))
 

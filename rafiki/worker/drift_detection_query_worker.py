@@ -5,7 +5,7 @@ import traceback
 import pprint
 from multiprocessing import Process
 
-from rafiki.utils.model import load_detector_class
+from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
@@ -67,9 +67,18 @@ class DriftDetectionQueryWorker(object):
                 self._db.commit()
 
                 logger.info('test')
-                for train_job_id,queries in train_job_id_to_queries.items():
+                for train_job_id,job_queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        self._update_on_queries(self._detectors[detector_method], train_job_id, queries, logger)
+                        if tmp_clazz is None:
+                            tmp_clazz = self._detectors[detector_method]
+                        self._update_on_queries(self._detectors[detector_method], train_job_id, job_queries, logger)
+
+                logger.info('upload datasets')
+                for train_job_id,job_queries in train_job_id_to_queries.items():
+                    if len(train_job_id_to_detection_methods[train_job_id]) > 0:
+                        tmp_detector_method = train_job_id_to_detection_methods[train_job_id][0]
+                        self._upload_queries(self._detectors[tmp_detector_method], train_job_id, job_queries, logger)
+
 
                 logger.info('finish')
 
@@ -89,7 +98,6 @@ class DriftDetectionQueryWorker(object):
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)
-
 
     def _update_on_queries(self, clazz, train_job_id, queries, logger):
         detector_inst = clazz()
@@ -114,6 +122,10 @@ class DriftDetectionQueryWorker(object):
                 continue
             else:
                 break
+
+    def _upload_queries(self, clazz, train_job_id, queries, logger):
+        detector_inst = clazz()
+        detector_inst.init()
 
         logger.info('upload data')
         while True:

@@ -20,10 +20,10 @@ class DataRepositoryQueryWorker(object):
         self._cache = cache
         self._db = db
         self._service_id = service_id
-        self._cwd = '/'
+        self._cwd = '/home/zhulei/rafiki-concept-drift'
 
     def start(self):
-        logger.info('Starting data repository worker for service of id {}...' \
+        logger.info('Starting data repository query worker for service of id {}...' \
             .format(self._service_id))
 
         # Add to set of running workers
@@ -35,13 +35,13 @@ class DataRepositoryQueryWorker(object):
 
             if len(train_job_ids) > 0:
                 self._db.connect()
-                for query_index, train_job_id in zip(query_indexes, train_job_ids):
+                for query_index, train_job_id, queries_in_batch in zip(query_indexes, train_job_ids, queries):
                     train_job = self._db.get_train_job(train_job_id)
                     self._create_query_folder(train_job_id)
                     logger.info('storing data ...')
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
-                        for query in queries:
+                        for query in queries_in_batch:
                             # update query index in the database
                             self._db.update_prediction_index(query[0], str(tmp_index))
                             if len(np.array(query).shape) == 2:
@@ -51,7 +51,7 @@ class DataRepositoryQueryWorker(object):
                             tmp_index += 1
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
                         tmp_index = int(query_index)
-                        for query in queries:
+                        for query in queries_in_batch:
                             # update query index in the database
                             self._db.update_prediction_index(query[0], str(tmp_index))
                             with open(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.csv'), 'w') as f:

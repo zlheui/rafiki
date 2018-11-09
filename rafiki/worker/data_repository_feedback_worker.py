@@ -18,10 +18,10 @@ class DataRepositoryFeedbackWorker(object):
         self._cache = cache
         self._db = db
         self._service_id = service_id
-        self._cwd = '/'
+        self._cwd = '/home/zhulei/rafiki-concept-drift'
 
     def start(self):
-        logger.info('Starting data repository worker for service of id {}...' \
+        logger.info('Starting data repository feedback worker for service of id {}...' \
             .format(self._service_id))
 
         # Add to set of running workers

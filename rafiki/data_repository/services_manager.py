@@ -26,6 +26,7 @@ class ServicesManager(object):
             'POSTGRES_DB': os.environ['POSTGRES_DB'],
             'POSTGRES_PASSWORD': os.environ['POSTGRES_PASSWORD'],
             'LOGS_FOLDER_PATH': os.environ['LOGS_FOLDER_PATH'],
+            'CONCEPT_DRIFT_FOLDER': os.environ['CONCEPT_DRIFT_FOLDER'],
             'REDIS_HOST': os.environ['REDIS_HOST'],
             'REDIS_PORT': os.environ['REDIS_PORT'],
             'ADMIN_HOST': os.environ['ADMIN_HOST'],
@@ -83,8 +84,10 @@ class ServicesManager(object):
 
         # Mount logs folder onto workers too
         logs_folder_path = os.environ['LOGS_FOLDER_PATH']
+        concept_drift_folder = os.environ['CONCEPT_DRIFT_FOLDER']
         mounts = {
-            logs_folder_path: logs_folder_path
+            logs_folder_path: logs_folder_path,
+            concept_drift_folder: concept_drift_folder
         }
 
         # Expose container port if it exists

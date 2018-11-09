@@ -5,7 +5,7 @@ import traceback
 import pprint
 from multiprocessing import Process
 
-from rafiki.utils.model import load_detector_class
+from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE

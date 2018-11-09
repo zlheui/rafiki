@@ -5,6 +5,7 @@ export POSTGRES_DB=rafiki
 export POSTGRES_PASSWORD=rafiki
 export DOCKER_NETWORK=rafiki
 export LOGS_FOLDER_PATH=/home/zhulei/var/log/rafiki
+export CONCEPT_DRIFT_FOLDER=/home/zhulei/rafiki-concept-drift
 export ADMIN_HOST=rafiki_admin
 export ADMIN_PORT=8000
 export ADVISOR_HOST=rafiki_advisor

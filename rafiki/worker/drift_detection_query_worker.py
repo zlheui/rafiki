@@ -66,16 +66,23 @@ class DriftDetectionQueryWorker(object):
                     self._detectors[detector_name] = clazz
                 self._db.commit()
 
-                logger.info('multiprocessing')
-                procs = []
+                logger.info('test')
                 for train_job_id,queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        proc = Process(target=self._update_on_queries, args=(self._detectors[detector_method], train_job_id, queries))
-                        procs.append(proc)
-                        proc.start()
-                for proc in procs:
-                    proc.join()
-                logger.info('finish multiprocessing')
+                        self._update_on_queries(self._detectors[detector_method], train_job_id, queries, logger)
+
+                logger.info('finish')
+
+                # logger.info('multiprocessing')
+                # procs = []
+                # for train_job_id,queries in train_job_id_to_queries.items():
+                #     for detector_method in train_job_id_to_detection_methods[train_job_id]:
+                #         proc = Process(target=self._update_on_queries, args=(self._detectors[detector_method], train_job_id, queries))
+                #         procs.append(proc)
+                #         proc.start()
+                # for proc in procs:
+                #     proc.join()
+                # logger.info('finish multiprocessing')
 
             time.sleep(DRIFT_WORKER_SLEEP)
 
@@ -84,7 +91,7 @@ class DriftDetectionQueryWorker(object):
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)
 
 
-    def _update_on_queries(clazz, train_job_id, queries):
+    def _update_on_queries(self, clazz, train_job_id, queries, logger):
         detector_inst = clazz()
         detector_inst.init()
 
@@ -111,7 +118,7 @@ class DriftDetectionQueryWorker(object):
         logger.info('upload data')
         while True:
             try:
-                detector_inst.upload_queries(train_job_id, queries)
+                detector_inst.upload_queries(train_job_id, queries, logger)
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue

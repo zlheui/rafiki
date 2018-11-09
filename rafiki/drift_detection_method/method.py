@@ -17,7 +17,7 @@ class BaseMethod(abc.ABC):
         self._db = db
 
     @abc.abstractmethod
-    def update_on_queries(self, train_job_id, queries, query_index):
+    def update_on_queries(self, train_job_id, queries, query_index=None):
         raise(NotImplementedError)
 
     @abc.abstractmethod
@@ -49,5 +49,5 @@ class BaseMethod(abc.ABC):
         
         logger.info('finish uploading')
 
-        output.put(train_job_id, query_index)
+        output.put((train_job_id, query_index))
         return (train_job_id, query_index)

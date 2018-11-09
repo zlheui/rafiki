@@ -81,6 +81,8 @@ class DriftDetectionQueryWorker(object):
                 for proc in procs:
                     proc.join()
 
+                logger.info(results)
+
                 train_job_id_to_query_index = {}
                 for e in results:
                     train_job_id_to_query_index[e[0]] = int(e[1])

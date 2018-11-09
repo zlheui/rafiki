@@ -27,8 +27,8 @@ class Client(object):
         self._data_repository_port = data_repository_port
         self._drift_detector_host = drift_detector_host
         self._drift_detector_port = drift_detector_port
-        self._feedback_host = drift_feedback_host
-        self._feedback_port = drift_feedback_port
+        self._feedback_host = feedback_host
+        self._feedback_port = feedback_port
         self._token = None
 
     def login(self, email, password):

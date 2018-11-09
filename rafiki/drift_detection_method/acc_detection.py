@@ -11,7 +11,7 @@ class AccDetector(BaseMethod):
     Change detection based on feedback accuracy
     '''
 
-    def update_on_queries(self, train_job_id, queries):
+    def update_on_queries(self, train_job_id, queries, query_index):
         return False, None
 
 

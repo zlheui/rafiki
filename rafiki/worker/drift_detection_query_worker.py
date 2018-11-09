@@ -4,6 +4,7 @@ import os
 import traceback
 import pprint
 from multiprocessing import Process
+from multiprocessing import Queue
 
 from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
@@ -66,24 +67,37 @@ class DriftDetectionQueryWorker(object):
                     self._detectors[detector_name] = clazz
                 self._db.commit()
 
-                logger.info('multiprocessing')
+                logger.info('multiprocessing for uploading datasets')
+                procs = []
+                output = Queue()
+                for train_job_id,job_queries in train_job_id_to_queries.items():
+                    if len(train_job_id_to_detection_methods[train_job_id]) > 0:
+                        tmp_detector_method = train_job_id_to_detection_methods[train_job_id][0]
+                        proc = Process(target=self._upload_queries, args=(self._detectors[tmp_detector_method], train_job_id, job_queries, output, logger))
+                        procs.append(proc)
+                        proc.start()
+
+                results = [output.get() for p in procs]
+                for proc in procs:
+                    proc.join()
+
+                train_job_id_to_query_index = {}
+                for e in results:
+                    train_job_id_to_query_index[e[0]] = int(e[1])
+
+                logger.info('finish uploading datasets')
+
+                logger.info('multiprocessing for drift detection')
                 procs = []
                 for train_job_id,queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        proc = Process(target=self._update_on_queries, args=(self._detectors[detector_method], train_job_id, queries, logger))
+                        proc = Process(target=self._update_on_queries, \
+                         args=(self._detectors[detector_method], train_job_id, queries, train_job_id_to_query_index[train_job_id], logger))
                         procs.append(proc)
                         proc.start()
                 for proc in procs:
                     proc.join()
-                logger.info('finish multiprocessing')
-
-                logger.info('upload datasets')
-                for train_job_id,job_queries in train_job_id_to_queries.items():
-                    if len(train_job_id_to_detection_methods[train_job_id]) > 0:
-                        tmp_detector_method = train_job_id_to_detection_methods[train_job_id][0]
-                        self._upload_queries(self._detectors[tmp_detector_method], train_job_id, job_queries, logger)
-
-                logger.info('finish')
+                logger.info('finish drift detection')
 
             time.sleep(DRIFT_WORKER_SLEEP)
 
@@ -91,7 +105,7 @@ class DriftDetectionQueryWorker(object):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)
 
-    def _update_on_queries(self, clazz, train_job_id, queries, logger):
+    def _update_on_queries(self, clazz, train_job_id, queries, query_index, logger):
         detector_inst = clazz()
         detector_inst.init()
 
@@ -99,12 +113,12 @@ class DriftDetectionQueryWorker(object):
 
         while True:
             try:
-                detection_result, query_index = detector_inst.update_on_queries(train_job_id, queries)
-                if detection_result and query_index is not None:
+                detection_result, index_of_change = detector_inst.update_on_queries(train_job_id, queries, query_index)
+                if detection_result and index_of_change is not None:
                     if self._client is None:
                         self._client = self._make_client()
 
-                    res = self._client.create_new_dataset(train_job_id, query_index)
+                    res = self._client.create_new_dataset(train_job_id, index_of_change)
                     if bool(res['created']):
                         # TODO: schedule admin to retrain the trail
                         pass
@@ -115,14 +129,14 @@ class DriftDetectionQueryWorker(object):
             else:
                 break
 
-    def _upload_queries(self, clazz, train_job_id, queries, logger):
+    def _upload_queries(self, clazz, train_job_id, queries, output, logger):
         detector_inst = clazz()
         detector_inst.init()
 
         logger.info('upload data')
         while True:
             try:
-                detector_inst.upload_queries(train_job_id, queries, logger)
+                detector_inst.upload_queries(train_job_id, queries, output, logger)
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue

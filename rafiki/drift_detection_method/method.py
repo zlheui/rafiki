@@ -17,14 +17,14 @@ class BaseMethod(abc.ABC):
         self._db = db
 
     @abc.abstractmethod
-    def update_on_queries(self, train_job_id, queries):
+    def update_on_queries(self, train_job_id, queries, query_index):
         raise(NotImplementedError)
 
     @abc.abstractmethod
     def update_on_feedbacks(self, train_job_id, feedbacks):
         raise(NotImplementedError)
 
-    def upload_queries(self, train_job_id, queries, logger):
+    def upload_queries(self, train_job_id, queries, output, logger):
         logger.info('upload data')
         self._db.connect()
         train_job = self._db.get_train_job(train_job_id)
@@ -42,13 +42,12 @@ class BaseMethod(abc.ABC):
         logger.info('upload use cache')
         # use cache to send the queries to data repository, only one worker is available
         # scalability is ensured by replicas of the service
-        try:
-            running_data_repository_worker_ids = self._cache.get_data_repository_workers(service_type=ServiceType.REPOSITORY_QUERY)
-        except Exception as e:
-            logger.info('error'+str(e))
+        running_data_repository_worker_ids = self._cache.get_data_repository_workers(service_type=ServiceType.REPOSITORY_QUERY)
         logger.info('worker_id: ' + ','.join(running_data_repository_worker_ids))
         if len(running_data_repository_worker_ids) > 0:
-            logger.info('add queries')
             query_index = self._cache.add_queries_of_data_repository_worker(running_data_repository_worker_ids[0], train_job_id, query_index, queries)
-            logger.info('finish add query')
+        
         logger.info('finish uploading')
+
+        output.put(train_job_id, query_index)
+        return (train_job_id, query_index)

@@ -18,7 +18,7 @@ class Client(object):
                 advisor_host='localhost', advisor_port=8001,
                 data_repository_host='localhost', data_repository_port=8007,
                 drift_detector_host='localhost', drift_detector_port=8005,
-                drift_feedback_host='localhost', drift_feedback_port=8006):
+                feedback_host='localhost', feedback_port=8006):
         self._admin_host = admin_host
         self._admin_port = admin_port
         self._advisor_host = advisor_host
@@ -27,8 +27,8 @@ class Client(object):
         self._data_repository_port = data_repository_port
         self._drift_detector_host = drift_detector_host
         self._drift_detector_port = drift_detector_port
-        self._drifit_feedback_host = drift_feedback_host
-        self._drifit_feedback_port = drift_feedback_port
+        self._feedback_host = drift_feedback_host
+        self._feedback_port = drift_feedback_port
         self._token = None
 
     def login(self, email, password):
@@ -388,7 +388,7 @@ class Client(object):
     ####################################
 
     def create_feedback(self, train_job_id, query_index, label):
-        data = self._post('/'+train_job_id+'/'+query_index,
+        data = self._post('/'+train_job_id+'/'+str(query_index),
                         target='feedback', json={
                             'label':label
                         })

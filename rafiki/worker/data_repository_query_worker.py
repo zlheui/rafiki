@@ -42,9 +42,11 @@ class DataRepositoryQueryWorker(object):
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
+                            logger.info('query')
+                            logger.info(query)
                             # update query index in the database
                             self._db.update_prediction_index(query[0], str(tmp_index))
-                            if len(np.array(query).shape) == 2:
+                            if len(np.array(query[1]).shape) == 2:
                                 plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
                             else:
                                 plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]))

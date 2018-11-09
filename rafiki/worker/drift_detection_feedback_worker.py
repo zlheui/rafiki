@@ -46,7 +46,7 @@ class DriftDetectionFeedbackWorker(object):
                 detection_methods = []
                 self._db.connect()
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
-                    trials = self._db.get_trials_of_train_job()
+                    trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_detection_methods[train_job_id] = []
                     for trial in trials:
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)
@@ -62,7 +62,7 @@ class DriftDetectionFeedbackWorker(object):
                 for detector_name in detection_methods:
                     detector = self._db.get_detector_by_name(detector_name)
                     clazz = load_detector_class(detector.detector_file_bytes, detector.detector_class)
-                    self._drift_detectors[detector_name] = clazz
+                    self._detectors[detector_name] = clazz
                 self._db.commit()
 
                 logger.info('start multiprocessing')

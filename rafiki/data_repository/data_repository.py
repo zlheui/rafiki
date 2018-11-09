@@ -17,7 +17,7 @@ class DataRepository(object):
     def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
         self._services_manager = ServicesManager(db, container_manager)
-        self._cwd = '/'
+        self._cwd = '/home/zhulei/rafiki-concept-drift'
 
 
     def list_files(self, startpath):

@@ -66,12 +66,16 @@ class DriftDetectionQueryWorker(object):
                     self._detectors[detector_name] = clazz
                 self._db.commit()
 
-                logger.info('test')
-                for train_job_id,job_queries in train_job_id_to_queries.items():
+                logger.info('multiprocessing')
+                procs = []
+                for train_job_id,queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        if tmp_clazz is None:
-                            tmp_clazz = self._detectors[detector_method]
-                        self._update_on_queries(self._detectors[detector_method], train_job_id, job_queries, logger)
+                        proc = Process(target=self._update_on_queries, args=(self._detectors[detector_method], train_job_id, queries, logger))
+                        procs.append(proc)
+                        proc.start()
+                for proc in procs:
+                    proc.join()
+                logger.info('finish multiprocessing')
 
                 logger.info('upload datasets')
                 for train_job_id,job_queries in train_job_id_to_queries.items():
@@ -79,19 +83,7 @@ class DriftDetectionQueryWorker(object):
                         tmp_detector_method = train_job_id_to_detection_methods[train_job_id][0]
                         self._upload_queries(self._detectors[tmp_detector_method], train_job_id, job_queries, logger)
 
-
                 logger.info('finish')
-
-                # logger.info('multiprocessing')
-                # procs = []
-                # for train_job_id,queries in train_job_id_to_queries.items():
-                #     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                #         proc = Process(target=self._update_on_queries, args=(self._detectors[detector_method], train_job_id, queries))
-                #         procs.append(proc)
-                #         proc.start()
-                # for proc in procs:
-                #     proc.join()
-                # logger.info('finish multiprocessing')
 
             time.sleep(DRIFT_WORKER_SLEEP)
 

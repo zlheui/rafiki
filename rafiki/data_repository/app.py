@@ -36,10 +36,23 @@ def generate_user_token():
         'token': token
     })
 
-@app.route('/print_folder_structure/<train_job_id>', methods=['GET'])
-def print_folder_structure(train_job_id):
+@app.route('/print_folder_structure/<train_job_id>', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def print_folder_structure(auth, train_job_id):
     with data_repository:
         return jsonify(data_repository.print_folder_structure(train_job_id=train_job_id))
+
+@app.route('/remove_folder/<train_job_id>', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def remove_train_job_folder(auth, train_job_id):
+    with data_repository:
+        return jsonify(data_repository.remove_train_job_folder(train_job_id=train_job_id))
+
+@app.route('/remove_all_folders', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def remove_all_folders(auth):
+    with data_repository:
+        return jsonify(data_repository.remove_all_folders())
 
 @app.route('/hello', methods=['GET'])
 def hello():

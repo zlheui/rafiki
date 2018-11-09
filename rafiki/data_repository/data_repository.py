@@ -2,15 +2,13 @@ import time
 import logging
 import os
 import traceback
+import shutil
 
 from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager
 from .services_manager import ServicesManager
 
-
 logger = logging.getLogger(__name__)
-
-
 
 class DataRepository(object):
 
@@ -30,6 +28,20 @@ class DataRepository(object):
             for f in files:
                 output += '{}{}'.format(subindent, f) + '\n'
         return output
+
+    def remove_train_job_folder(self, train_job_id):
+        shutil.rmtree(os.path.join(self._cwd, train_job_id))
+
+        return {
+            'removed': True
+        }
+
+    def remove_all_folders(self):
+        shutil.rmtree(self._cwd)
+
+        return {
+            'removed': True
+        }
 
     def print_folder_structure(self, train_job_id):
         folder_structure = self.list_files(os.path.join(self._cwd, train_job_id))

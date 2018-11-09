@@ -383,6 +383,30 @@ class Client(object):
         data = self._post(path, target='data_repository')
         return data
 
+    def print_folder_structure(self, train_job_id):
+        '''
+        print the folder of a train_job_id
+        '''
+        path = '/print_folder_structure/' + train_job_id
+        data = self._post(path, target='data_repository')
+        return data
+
+    def remove_train_job_folder(self, train_job_id):
+        '''
+        remove the folder of a train_job_id
+        '''
+        path = '/remove_folder/' + train_job_id
+        data = self._post(path, target='data_repository')
+        return data
+
+    def remove_all_folders(self):
+        '''
+        remove concept drift data folder
+        '''
+        path = '/remove_all_folders'
+        data = self._post(path, target='data_repository')
+        return data
+
     ####################################
     # Feedback
     ####################################

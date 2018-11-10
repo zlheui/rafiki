@@ -38,14 +38,14 @@ class DataRepository(object):
         return output
 
     def remove_train_job_folder(self, train_job_id):
-        shutil.rmtree(os.path.join(self._cwd, train_job_id))
+        shutil.rmtree(os.path.join(self._cwd, train_job_id), ignore_errors=True)
 
         return {
             'removed': True
         }
 
     def remove_all_folders(self):
-        shutil.rmtree(self._cwd)
+        shutil.rmtree(self._cwd, ignore_errors=True)
 
         return {
             'removed': True
@@ -65,11 +65,11 @@ class DataRepository(object):
         random.seed(0)
 
         dataset_info = {}
-        if os.path.exists(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl')):
-            dataset_info = pickle.load(open(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl'), 'rb'))
+        if os.path.exists(os.path.join(self._cwd, train_job_id, dataset_folder, 'dataset_info.pkl')):
+            dataset_info = pickle.load(open(os.path.join(self._cwd, train_job_id, dataset_folder, 'dataset_info.pkl'), 'rb'))
         else:
-            if not os.path.exists(os.path.join(self._cwd, dataset_folder)):
-                os.makedirs(os.path.join(self._cwd, dataset_folder))
+            if not os.path.exists(os.path.join(self._cwd, train_job_id, dataset_folder)):
+                os.makedirs(os.path.join(self._cwd, train_job_id, dataset_folder))
 
             train_job = self._db.get_train_job(train_job_id)
             train_uri = train_job.train_dataset_uri
@@ -105,14 +105,14 @@ class DataRepository(object):
 
             for uri,file_name in uri_pairs:
                 response = requests.get(uri, stream=True)
-                handle = open(os.path.join(self._cwd, dataset_folder, file_name), "wb")
+                handle = open(os.path.join(self._cwd, train_job_id, dataset_folder, file_name), "wb")
                 for chunk in response.iter_content(chunk_size=512):
                     if chunk:  # filter out keep-alive new chunks
                         handle.write(chunk)
                 handle.close()
 
-                with zipfile.ZipFile(os.path.join(self._cwd, dataset_folder, file_name)) as zf:
-                    zf.extractall(os.path.join(self._cwd, dataset_folder))
+                with zipfile.ZipFile(os.path.join(self._cwd, train_job_id, dataset_folder, file_name)) as zf:
+                    zf.extractall(os.path.join(self._cwd, train_job_id, dataset_folder))
 
             dataset_info['version'] = 1
             dataset_info['train'] = train_folder
@@ -122,12 +122,11 @@ class DataRepository(object):
 
             data_folders = [train_folder, test_folder]
 
-
             # TODO: check the folder structure after extraction
             for folder in data_folders:
-                for folder1 in os.listdir(os.path.join(self._cwd, dataset_folder, folder)):
-                    if os.path.isdir(os.path.join(self._cwd, dataset_folder, folder, folder1)):
-                        for file in os.listdir(os.path.join(self._cwd, dataset_folder, folder, folder1)):
+                for folder1 in os.listdir(os.path.join(self._cwd, train_job_id, dataset_folder, folder)):
+                    if os.path.isdir(os.path.join(self._cwd, train_job_id, dataset_folder, folder, folder1)):
+                        for file in os.listdir(os.path.join(self._cwd, train_job_id, dataset_folder, folder, folder1)):
                             if folder1 in dataset_info[folder]:
                                 dataset_info[folder][folder1].append(file)
                             else:
@@ -142,15 +141,20 @@ class DataRepository(object):
                 for label,files in dataset_info[folder].items():
                     print(len(files))
 
+        train_folder = dataset_info['train']
+        test_folder = dataset_info['test']
+        data_folders = [train_folder, test_folder]
+
         feedback_info = {}
 
-        for folder in os.listdir(os.path.join(self._cwd, feedback_folder)):
-            if os.path.isdir(os.path.join(self._cwd, feedback_folder, folder)):
-                for file in os.listdir(os.path.join(self._cwd, feedback_folder, folder)):
-                    if folder in feedback_info:
-                        feedback_info[folder].append(file)
-                    else:
-                        feedback_info[folder] = [file]
+        for folder in os.listdir(os.path.join(self._cwd, train_job_id, feedback_folder)):
+            if os.path.isdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
+                if folder in dataset_info[train_folder] and folder in dataset_info[test_folder]:
+                    for file in os.listdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
+                        if folder in feedback_info:
+                            feedback_info[folder].append(file)
+                        else:
+                            feedback_info[folder] = [file]
 
         for folder, files in feedback_info.items():
             files.sort(key=lambda x: int(x.split('.')[0].split('_')[1]), reverse=True)
@@ -166,8 +170,8 @@ class DataRepository(object):
         assign_files[test_folder] = {}
 
         for folder, files in feedback_info.items():
-            train_size = len(dataset_info[dataset_info['train']][folder])
-            test_size = len(dataset_info[dataset_info['test']][folder])
+            train_size = len(dataset_info[train_folder][folder])
+            test_size = len(dataset_info[test_folder][folder])
             for file in files:
                 if random.randint(0, train_size+test_size) < train_size:
                     if folder in assign_files[train_folder]:
@@ -183,46 +187,47 @@ class DataRepository(object):
         print(assign_files)
 
         # create new dataset
-        for folder, _ in feedback_info.items():
-            for data_folder in data_folders:
-                replace_size = len(assign_files[data_folder][folder])
+        for data_folder in data_folders:
+            for folder,content in assign_files[data_folder].items():
+                replace_size = len(content)
                 original_size = len(dataset_info[data_folder][folder])
                 if replace_size > original_size:
                     replace_size = original_size
             
                 for i in range(original_size-replace_size, original_size):
-                    os.remove(os.path.join(self._cwd, dataset_folder, data_folder, folder, dataset_info[data_folder][folder][i]))
+                    os.remove(os.path.join(self._cwd, train_job_id, dataset_folder, data_folder, folder, dataset_info[data_folder][folder][i]))
                 for i in range(0, replace_size):
-                    add_file = assign_files[data_folder][folder][i]
-                    shutil.move(os.path.join(self._cwd, feedback_folder, folder, add_file), os.path.join(self._cwd, dataset_folder, data_folder, folder, add_file))
+                    shutil.move(os.path.join(self._cwd, train_job_id, feedback_folder, folder, content[i]), os.path.join(self._cwd, train_job_id, dataset_folder, data_folder, folder, content[i]))
                 tmp_list = dataset_info[data_folder][folder][:(original_size-replace_size)]
                 dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
 
         # store dataset_info
         dataset_info['version'] += 1
-        pickle.dump(dataset_info, open(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl'), 'wb'))
+        pickle.dump(dataset_info, open(os.path.join(self._cwd, train_job_id, dataset_folder, 'dataset_info.pkl'), 'wb'))
 
         # remove original zip
-        os.remove(os.path.join(self._cwd, dataset_folder, dataset_info['train']+'.zip'))
-        os.remove(os.path.join(self._cwd, dataset_folder, dataset_info['test']+'.zip'))
+        if os.path.exists(os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip')):
+            os.remove(os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip'))
+        if os.path.exists(os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip')):
+            os.remove(os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip'))
 
         original_wd = os.getcwd()
         print(original_wd)
-        os.chdir(os.path.join(self._cwd, dataset_folder))
+        os.chdir(os.path.join(self._cwd, train_job_id, dataset_folder))
         zipf = zipfile.ZipFile(dataset_info['train']+'.zip', 'w', zipfile.ZIP_DEFLATED)
-        zipdir(dataset_info['train'], zipf)
+        self._zipdir(dataset_info['train'], zipf)
         zipf.close()
 
         zipf = zipfile.ZipFile(dataset_info['test']+'.zip', 'w', zipfile.ZIP_DEFLATED)
-        zipdir(dataset_info['test'], zipf)
+        self._zipdir(dataset_info['test'], zipf)
         zipf.close()
 
         os.chdir(original_wd)
 
         return {
             'created': True,
-            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(cwd, dataset_folder, dataset_info['train']+'.zip')),
-            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(cwd, dataset_folder, dataset_info['test']+'.zip'))
+            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip')),
+            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip'))
         }
 
     def create_data_repository_service(self, service_type):
@@ -251,19 +256,19 @@ class DataRepository(object):
     def disconnect(self):
         self._db.disconnect()
 
-    def _is_zip(uri):
+    def _is_zip(self, uri):
         return '.zip' in uri
 
-    def _is_http(protocol):
+    def _is_http(self, protocol):
         return protocol == DatasetProtocol.HTTP
 
-    def _is_https(protocol):
+    def _is_https(self, protocol):
         return protocol == DatasetProtocol.HTTPS
 
-    def _is_image_classification(task):
+    def _is_image_classification(self, task):
         return task == TaskType.IMAGE_CLASSIFICATION
 
-    def zipdir(path, ziph):
+    def _zipdir(self, path, ziph):
         # ziph is zipfile handle
         for root, dirs, files in os.walk(path):
             for file in files:

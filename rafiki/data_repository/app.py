@@ -82,7 +82,8 @@ def stop_data_repository_feedback_service(auth):
     with data_repository:
         return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
 
-@app.route('/create_new_dataset/<train_job_id>', methods=['GET'])
+@app.route('/create_new_dataset/<train_job_id>', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_new_dataset(auth, train_job_id):
     params = get_request_params()
     with data_repository:

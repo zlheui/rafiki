@@ -349,7 +349,7 @@ class Client(object):
     ####################################
 
     def create_dataset(self, train_job_id, query_index):
-        data = self._post('/create_dataset/'+train_job_id,
+        data = self._post('/create_new_dataset/'+train_job_id,
                         target='data_repository', json={
                             'query_index': query_index
                         })

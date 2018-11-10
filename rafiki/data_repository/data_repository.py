@@ -68,18 +68,21 @@ class DataRepository(object):
         if os.path.exists(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl')):
             dataset_info = pickle.load(open(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl'), 'rb'))
         else:
-            train_job = db.get_train_job(train_job_id)
+            if not os.path.exists(os.path.join(self._cwd, dataset_folder)):
+                os.makedirs(os.path.join(self._cwd, dataset_folder))
+
+            train_job = self._db.get_train_job(train_job_id)
             train_uri = train_job.train_dataset_uri
             test_uri = train_job.test_dataset_uri
             task = train_job.task
 
-            if not (_is_zip(train_uri)):
+            if not (self._is_zip(train_uri)):
                 raise Exception('{} compression not supported'.format(train_uri))
 
-            if not (_is_zip(test_uri)):
+            if not (self._is_zip(test_uri)):
                 raise Exception('{} compression not supported'.format(test_uri))
 
-            if not _is_image_classification(task):
+            if not self._is_image_classification(task):
                 raise Exception('{} task not supported'.format(task))
 
             parsed_train_uri = urlparse(train_uri)
@@ -87,10 +90,10 @@ class DataRepository(object):
             train_protocol = '{uri.scheme}'.format(uri=parsed_train_uri)
             test_protocol = '{uri.scheme}'.format(uri=parsed_test_uri)
             
-            if not (_is_http(train_protocol) or _is_https(train_protocol)):
+            if not (self._is_http(train_protocol) or self._is_https(train_protocol)):
                 raise Exception('Dataset URI scheme not supported: {}'.format(train_protocol))
 
-            if not (_is_http(test_protocol) or _is_https(test_protocol)):
+            if not (self._is_http(test_protocol) or self._is_https(test_protocol)):
                 raise Exception('Dataset URI scheme not supported: {}'.format(test_protocol))
 
             train_file_name = os.path.basename(parsed_train_uri.path)
@@ -249,14 +252,14 @@ class DataRepository(object):
         self._db.disconnect()
 
     def _is_zip(uri):
-    return '.zip' in uri
+        return '.zip' in uri
 
     def _is_http(protocol):
-    return protocol == DatasetProtocol.HTTP
+        return protocol == DatasetProtocol.HTTP
 
     def _is_https(protocol):
         return protocol == DatasetProtocol.HTTPS
-        
+
     def _is_image_classification(task):
         return task == TaskType.IMAGE_CLASSIFICATION
 

@@ -7,7 +7,7 @@ import pprint
 from rafiki.cache import Cache
 from rafiki.db import Database
 from rafiki.config import DATA_REPOSITORY_SLEEP, DATA_REPOSITORY_BATCH_SIZE
-from rafiki.constants import ServiceType, TaskType
+from rafiki.constants import ServiceType, TaskType, Prefixes
 
 import shutil
 
@@ -44,11 +44,11 @@ class DataRepositoryFeedbackWorker(object):
                     # move unlabeled data to feedback folder
                     train_job = self._db.get_train_job(train_job_id)
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
-                        shutil.move(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.png'), \
-                         os.path.join(self._cwd, train_job_id, 'feedback', label, str(query_index)+'.png'))
+                        shutil.move(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+str(query_index)+'.png'), \
+                         os.path.join(self._cwd, train_job_id, 'feedback', label, Prefixes.Drift+str(query_index)+'.png'))
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
-                        shutil.move(os.path.join(self._cwd, train_job_id, 'query', str(query_index)+'.csv'), \
-                         os.path.join(self._cwd, train_job_id, 'feedback', label, str(query_index)+'.csv'))
+                        shutil.move(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+str(query_index)+'.csv'), \
+                         os.path.join(self._cwd, train_job_id, 'feedback', label, Prefixes.Drift+str(query_index)+'.csv'))
                     else:
                         raise NotImplementedError
                     logger.info('finish storing')

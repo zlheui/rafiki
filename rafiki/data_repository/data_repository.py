@@ -8,6 +8,14 @@ from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager
 from .services_manager import ServicesManager
 
+import pickle
+import requests
+import zipfile
+from urllib.parse import urlparse
+import random
+
+from rafiki.constants import TaskType, DatasetProtocol
+
 logger = logging.getLogger(__name__)
 
 class DataRepository(object):
@@ -51,16 +59,167 @@ class DataRepository(object):
         }
 
     def create_new_dataset(self, train_job_id, query_index):
-        files = [e for e in os.listdir(os.path.join(self._cwd, 'dataset'))]
+        dataset_folder = 'dataset'
+        feedback_folder = 'feedback'
 
-        if len(files) == 0:
-            # TODO: create train_URI and test_URI
-            pass
+        random.seed(0)
+
+        dataset_info = {}
+        if os.path.exists(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl')):
+            dataset_info = pickle.load(open(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl'), 'rb'))
+        else:
+            train_job = db.get_train_job(train_job_id)
+            train_uri = train_job.train_dataset_uri
+            test_uri = train_job.test_dataset_uri
+            task = train_job.task
+
+            if not (_is_zip(train_uri)):
+                raise Exception('{} compression not supported'.format(train_uri))
+
+            if not (_is_zip(test_uri)):
+                raise Exception('{} compression not supported'.format(test_uri))
+
+            if not _is_image_classification(task):
+                raise Exception('{} task not supported'.format(task))
+
+            parsed_train_uri = urlparse(train_uri)
+            parsed_test_uri = urlparse(test_uri)
+            train_protocol = '{uri.scheme}'.format(uri=parsed_train_uri)
+            test_protocol = '{uri.scheme}'.format(uri=parsed_test_uri)
+            
+            if not (_is_http(train_protocol) or _is_https(train_protocol)):
+                raise Exception('Dataset URI scheme not supported: {}'.format(train_protocol))
+
+            if not (_is_http(test_protocol) or _is_https(test_protocol)):
+                raise Exception('Dataset URI scheme not supported: {}'.format(test_protocol))
+
+            train_file_name = os.path.basename(parsed_train_uri.path)
+            test_file_name = os.path.basename(parsed_test_uri.path)
+            train_folder = train_file_name.split('.')[0]
+            test_folder = test_file_name.split('.')[0]
+
+            uri_pairs = [(train_uri,train_file_name), (test_uri,test_file_name)]
+
+            for uri,file_name in uri_pairs:
+                response = requests.get(uri, stream=True)
+                handle = open(os.path.join(self._cwd, dataset_folder, file_name), "wb")
+                for chunk in response.iter_content(chunk_size=512):
+                    if chunk:  # filter out keep-alive new chunks
+                        handle.write(chunk)
+                handle.close()
+
+                with zipfile.ZipFile(os.path.join(self._cwd, dataset_folder, file_name)) as zf:
+                    zf.extractall(os.path.join(self._cwd, dataset_folder))
+
+            dataset_info['version'] = 1
+            dataset_info['train'] = train_folder
+            dataset_info['test'] = test_folder
+            dataset_info[train_folder] = {}
+            dataset_info[test_folder] = {}
+
+            data_folders = [train_folder, test_folder]
+
+
+            # TODO: check the folder structure after extraction
+            for folder in data_folders:
+                for folder1 in os.listdir(os.path.join(self._cwd, dataset_folder, folder)):
+                    if os.path.isdir(os.path.join(self._cwd, dataset_folder, folder, folder1)):
+                        for file in os.listdir(os.path.join(self._cwd, dataset_folder, folder, folder1)):
+                            if folder1 in dataset_info[folder]:
+                                dataset_info[folder][folder1].append(file)
+                            else:
+                                dataset_info[folder][folder1] = [file]
+
+            # sort the files in each folder according to the added-in order
+            for folder in data_folders:
+                for label,files in dataset_info[folder].items():
+                    random.shuffle(files)
+
+            for folder in data_folders:
+                for label,files in dataset_info[folder].items():
+                    print(len(files))
+
+        feedback_info = {}
+
+        for folder in os.listdir(os.path.join(self._cwd, feedback_folder)):
+            if os.path.isdir(os.path.join(self._cwd, feedback_folder, folder)):
+                for file in os.listdir(os.path.join(self._cwd, feedback_folder, folder)):
+                    if folder in feedback_info:
+                        feedback_info[folder].append(file)
+                    else:
+                        feedback_info[folder] = [file]
+
+        for folder, files in feedback_info.items():
+            files.sort(key=lambda x: int(x.split('.')[0].split('_')[1]), reverse=True)
+
+        print(feedback_info)
+
+        train_folder = dataset_info['train']
+        test_folder = dataset_info['test']
+        data_folders = [train_folder, test_folder]
+
+        assign_files = {}
+        assign_files[train_folder] = {}
+        assign_files[test_folder] = {}
+
+        for folder, files in feedback_info.items():
+            train_size = len(dataset_info[dataset_info['train']][folder])
+            test_size = len(dataset_info[dataset_info['test']][folder])
+            for file in files:
+                if random.randint(0, train_size+test_size) < train_size:
+                    if folder in assign_files[train_folder]:
+                        assign_files[train_folder][folder].append(file)
+                    else:
+                        assign_files[train_folder][folder] = [file]
+                else:
+                    if folder in assign_files[test_folder]:
+                        assign_files[test_folder][folder].append(file)
+                    else:
+                        assign_files[test_folder][folder] = [file]
+
+        print(assign_files)
+
+        # create new dataset
+        for folder, _ in feedback_info.items():
+            for data_folder in data_folders:
+                replace_size = len(assign_files[data_folder][folder])
+                original_size = len(dataset_info[data_folder][folder])
+                if replace_size > original_size:
+                    replace_size = original_size
+            
+                for i in range(original_size-replace_size, original_size):
+                    os.remove(os.path.join(self._cwd, dataset_folder, data_folder, folder, dataset_info[data_folder][folder][i]))
+                for i in range(0, replace_size):
+                    add_file = assign_files[data_folder][folder][i]
+                    shutil.move(os.path.join(self._cwd, feedback_folder, folder, add_file), os.path.join(self._cwd, dataset_folder, data_folder, folder, add_file))
+                tmp_list = dataset_info[data_folder][folder][:(original_size-replace_size)]
+                dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
+
+        # store dataset_info
+        dataset_info['version'] += 1
+        pickle.dump(dataset_info, open(os.path.join(self._cwd, dataset_folder, 'dataset_info.pkl'), 'wb'))
+
+        # remove original zip
+        os.remove(os.path.join(self._cwd, dataset_folder, dataset_info['train']+'.zip'))
+        os.remove(os.path.join(self._cwd, dataset_folder, dataset_info['test']+'.zip'))
+
+        original_wd = os.getcwd()
+        print(original_wd)
+        os.chdir(os.path.join(self._cwd, dataset_folder))
+        zipf = zipfile.ZipFile(dataset_info['train']+'.zip', 'w', zipfile.ZIP_DEFLATED)
+        zipdir(dataset_info['train'], zipf)
+        zipf.close()
+
+        zipf = zipfile.ZipFile(dataset_info['test']+'.zip', 'w', zipfile.ZIP_DEFLATED)
+        zipdir(dataset_info['test'], zipf)
+        zipf.close()
+
+        os.chdir(original_wd)
 
         return {
             'created': True,
-            'train_dataset_uri': 'abc',
-            'test_dataset_uri': 'abc'
+            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(cwd, dataset_folder, dataset_info['train']+'.zip')),
+            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(cwd, dataset_folder, dataset_info['test']+'.zip'))
         }
 
     def create_data_repository_service(self, service_type):
@@ -88,3 +247,21 @@ class DataRepository(object):
 
     def disconnect(self):
         self._db.disconnect()
+
+    def _is_zip(uri):
+    return '.zip' in uri
+
+    def _is_http(protocol):
+    return protocol == DatasetProtocol.HTTP
+
+    def _is_https(protocol):
+        return protocol == DatasetProtocol.HTTPS
+        
+    def _is_image_classification(task):
+        return task == TaskType.IMAGE_CLASSIFICATION
+
+    def zipdir(path, ziph):
+        # ziph is zipfile handle
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                ziph.write(os.path.join(root, file))

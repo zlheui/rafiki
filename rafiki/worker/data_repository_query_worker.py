@@ -7,7 +7,7 @@ import pprint
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DATA_REPOSITORY_SLEEP, DATA_REPOSITORY_BATCH_SIZE
-from rafiki.constants import ServiceType, TaskType
+from rafiki.constants import ServiceType, TaskType, Prefixes
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -47,16 +47,16 @@ class DataRepositoryQueryWorker(object):
                             # update query index in the database
                             self._db.update_prediction_index(query[0], str(tmp_index))
                             if len(np.array(query[1]).shape) == 2:
-                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
+                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
                             else:
-                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.png'), np.array(query[1]))
+                                plt.imsave(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+str(tmp_index)+'.png'), np.array(query[1]))
                             tmp_index += 1
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
                             # update query index in the database
                             self._db.update_prediction_index(query[0], str(tmp_index))
-                            with open(os.path.join(self._cwd, train_job_id, 'query', str(tmp_index)+'.csv'), 'w') as f:
+                            with open(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+str(tmp_index)+'.csv'), 'w') as f:
                                 f.write(','.join([str(e) for e in query]))
                             tmp_index += 1
                     else:

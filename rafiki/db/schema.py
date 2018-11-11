@@ -129,7 +129,7 @@ class Prediction(Base):
         UniqueConstraint('query_index', 'trial_id'),
     )
 
-    id = Column(String, primary_key=True, default=generate_uuid)
+    id = Column(String, default=generate_uuid)
     query_index = Column(Integer)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)

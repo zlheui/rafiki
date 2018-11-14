@@ -125,10 +125,10 @@ class QueryStats(Base):
 class Prediction(Base):
     __tablename__ = 'prediction'
     __table_args__ = (
-        UniqueConstraint('query_id', 'trial_id'),
+        PrimaryKeyConstraint('id', 'trial_id'),
     )
 
-    id = Column(String, primary_key=True, default=generate_uuid)
+    id = Column(String, default=generate_uuid)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
 

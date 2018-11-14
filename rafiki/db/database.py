@@ -470,10 +470,10 @@ class Database(object):
         return query_index
 
     def update_query_index(self, query_id, query_index):
-        query_index = self._session.query(QueryIndex).get(id)
-        query_index.query_index = query_index
-        self._session.add(prediction)
-        return query_index
+        query = self._session.query(QueryIndex).get(query_id)
+        query.query_index = query_index
+        self._session.add(query)
+        return query
 
     ####################################
     # Others

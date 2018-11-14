@@ -125,14 +125,18 @@ class QueryStats(Base):
 class Prediction(Base):
     __tablename__ = 'prediction'
     __table_args__ = (
-        PrimaryKeyConstraint('id', 'trial_id'),
-        UniqueConstraint('query_index', 'trial_id'),
+        UniqueConstraint('query_id', 'trial_id'),
     )
 
-    id = Column(String, default=generate_uuid)
-    query_index = Column(Integer)
+    id = Column(String, primary_key=True, default=generate_uuid)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
+
+class QueryIndex(Base):
+    __tablename__ = 'query_index'
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    query_index = Column(Integer)
 
 class Feedback(Base):
     __tablename__ = 'feedback'

@@ -7,7 +7,7 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector, DriftDetectionSub
+    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector, DriftDetectionSub, QueryIndex
 
 class Database(object):
     def __init__(self, 
@@ -408,13 +408,6 @@ class Database(object):
         prediction = self._session.query(Prediction).get(id)
         return prediction
 
-    def update_prediction_index(self, query_id, query_index):
-        predictions = self._session.query(Prediction).filter(Prediction.id == query_id).all()
-        for prediction in predictions:
-            prediction.query_index = query_index
-            self._session.add(prediction)
-        return query_index
-
     ####################################
     # Feedback for Concept drift
     ####################################
@@ -460,6 +453,27 @@ class Database(object):
     def get_detector_subscriptions_by_trial_id(self, trial_id):
         detector_subs = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).all()
         return detector_subs
+
+    ####################################
+    # QueryIndex for Concept Drift
+    ####################################
+
+    def create_query_index(self, id):
+        query_index = QueryIndex(
+            id = id
+        )
+        self._session.add(query_index)
+        return query_index
+
+    def get_query_index(self, id):
+        query_index = self._session.query(QueryIndex).get(id)
+        return query_index
+
+    def update_query_index(self, query_id, query_index):
+        query_index = self._session.query(QueryIndex).get(id)
+        query_index.query_index = query_index
+        self._session.add(prediction)
+        return query_index
 
     ####################################
     # Others

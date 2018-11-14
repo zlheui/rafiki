@@ -48,6 +48,8 @@ class Predictor(object):
             running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_QUERY)
             if len(running_drift_detection_worker_ids) > 0:
                 con_drift_query_id = self._cache.add_query_of_drift_detection_worker(running_drift_detection_worker_ids[0], self._train_job_id, query)
+                con_drift_query_index = self._db.create_query_index(id=con_drift_query_id)
+                self._db.commit()
         # End of Concept drift code
 
         #TODO: add SLO. break loop when timer is out.

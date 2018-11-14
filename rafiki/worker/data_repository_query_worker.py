@@ -45,7 +45,7 @@ class DataRepositoryQueryWorker(object):
                             logger.info('query')
                             logger.info(query)
                             # update query index in the database
-                            self._db.update_prediction_index(query[0], str(tmp_index))
+                            self._db.update_query_index(query[0], str(tmp_index))
                             if len(np.array(query[1]).shape) == 2:
                                 plt.imsave(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+'_'+str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
                             else:
@@ -55,7 +55,7 @@ class DataRepositoryQueryWorker(object):
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
                             # update query index in the database
-                            self._db.update_prediction_index(query[0], str(tmp_index))
+                            self._db.update_query_index(query[0], str(tmp_index))
                             with open(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+'_'+str(tmp_index)+'.csv'), 'w') as f:
                                 f.write(','.join([str(e) for e in query]))
                             tmp_index += 1

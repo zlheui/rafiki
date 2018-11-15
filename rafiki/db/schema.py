@@ -126,13 +126,16 @@ class Prediction(Base):
     __tablename__ = 'prediction'
     __table_args__ = (
         PrimaryKeyConstraint('id', 'trial_id'),
-        UniqueConstraint('query_index', 'trial_id'),
     )
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    query_index = Column(Integer)
+    id = Column(String, default=generate_uuid)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     predict = Column(String, nullable=False)
+
+class QueryIndex(Base):
+    __tablename__ = 'query_index'
+    id = Column(String, primary_key=True, default=generate_uuid)
+    query_index = Column(Integer)
 
 class Feedback(Base):
     __tablename__ = 'feedback'
@@ -151,6 +154,17 @@ class Detector(Base):
     detector_file_bytes = Column(Binary, nullable=False)
     detector_class = Column(String, nullable=False)
 
+class DriftDetectionTrainJobSub(Base):
+    __tablename__ = 'drift_detection_train_job_subscription'
+    __table_args__ = (
+        UniqueConstraint('train_job_id', 'detector_name'),
+    )
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    train_job_id = Column(String, ForeignKey('train_job.id'), nullable=False)
+    detector_name = Column(String, ForeignKey('detector.name'), nullable=False)
+    param = Column(String, nullable=True)
+
 class DriftDetectionSub(Base):
     __tablename__ = 'drift_detection_subscription'
     __table_args__ = (
@@ -160,3 +174,4 @@ class DriftDetectionSub(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     trial_id = Column(String, ForeignKey('trial.id'), nullable=False)
     detector_name = Column(String, ForeignKey('detector.name'), nullable=False)
+    param = Column(String, nullable=True)

@@ -12,25 +12,32 @@ class BaseMethod(abc.ABC):
     Rafiki detection methods should implement all abstract methods.
     '''
 
-    def init(self, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
+    @abc.abstractmethod
+    def get_init_param(self):
+        #need to ensure the param dict is json serializable
+        raise(NotImplementedError)
+
+    def init(self, service_type=None, detector_name=None, job_id=None, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
+        self._detector_name = detector_name
+        self._param = self.get_init_param()
 
     @abc.abstractmethod
     def update_on_queries(self, train_job_id, queries, query_index=None):
         raise(NotImplementedError)
 
     @abc.abstractmethod
-    def update_on_feedbacks(self, train_job_id, feedbacks):
+    def update_on_feedbacks(self, trial_job_id, feedbacks):
         raise(NotImplementedError)
 
     def upload_queries(self, train_job_id, queries, output, logger):
-        logger.info('upload data')
+        logger.info('uploading data')
         self._db.connect()
         train_job = self._db.get_train_job(train_job_id)
         query_stats = self._db.get_query_stats_by_train_job_id(train_job_id)
         
-        logger.info('update query_stats')
+        logger.info('upload query_stats')
         if query_stats is None:
             query_stats = self._db.create_query_stats(train_job_id)
             self._db.commit()
@@ -38,6 +45,7 @@ class BaseMethod(abc.ABC):
         query_index = query_stats.next_query_index
         self._db.update_query_stats(query_stats, query_index+len(queries))
         self._db.commit()
+        self._db.disconnect()
 
         logger.info('upload use cache')
         # use cache to send the queries to data repository, only one worker is available

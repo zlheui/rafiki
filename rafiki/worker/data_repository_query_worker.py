@@ -20,7 +20,7 @@ class DataRepositoryQueryWorker(object):
         self._cache = cache
         self._db = db
         self._service_id = service_id
-        self._cwd = '/home/zhulei/rafiki-concept-drift'
+        self._cwd = os.environ['CONCEPT_DRIFT_FOLDER']
 
     def start(self):
         logger.info('Starting data repository query worker for service of id {}...' \
@@ -32,7 +32,9 @@ class DataRepositoryQueryWorker(object):
         while True:
             (train_job_ids, query_indexes, queries) = \
                 self._cache.pop_queries_of_data_repository_worker(self._service_id, DATA_REPOSITORY_BATCH_SIZE)
-
+            #if len(query_indexes) > 0:
+            #    logger.info(query_indexes)
+            #    logger.info(queries)
             if len(train_job_ids) > 0:
                 self._db.connect()
                 for query_index, train_job_id, queries_in_batch in zip(query_indexes, train_job_ids, queries):
@@ -45,7 +47,7 @@ class DataRepositoryQueryWorker(object):
                             logger.info('query')
                             logger.info(query)
                             # update query index in the database
-                            self._db.update_prediction_index(query[0], str(tmp_index))
+                            self._db.update_query_index(query[0], str(tmp_index))
                             if len(np.array(query[1]).shape) == 2:
                                 plt.imsave(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+'_'+str(tmp_index)+'.png'), np.array(query[1]), cmap=cm.gray)
                             else:
@@ -54,15 +56,24 @@ class DataRepositoryQueryWorker(object):
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
+                            logger.info(query)
+                            logger.info(tmp_index)
                             # update query index in the database
-                            self._db.update_prediction_index(query[0], str(tmp_index))
+                            try:
+                                self._db.update_query_index(query[0], str(tmp_index))
+                                logger.info("updated prediction index")
+                            except Exception as e:
+                                logger.info(query[0])
+                                logger.info(tmp_index)
+                                logger.info(e.message)
                             with open(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+'_'+str(tmp_index)+'.csv'), 'w') as f:
                                 f.write(','.join([str(e) for e in query]))
                             tmp_index += 1
                     else:
                         raise NotImplementedError
                     logger.info('finish storing')
-
+                self._db.commit()
+                self._db.disconnect()
             time.sleep(DATA_REPOSITORY_SLEEP)
 
     def stop(self):

@@ -10,7 +10,7 @@ from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
-from rafiki.constants import ServiceType
+from rafiki.constants import ServiceType, BudgetType
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class DriftDetectionQueryWorker(object):
                 for train_job_id,queries in train_job_id_to_queries.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
                         proc = Process(target=self._update_on_queries, \
-                         args=(self._detectors[detector_method], train_job_id, queries, train_job_id_to_query_index[train_job_id], logger))
+                         args=(detector_method, self._detectors[detector_method], train_job_id, queries, train_job_id_to_query_index[train_job_id], logger))
                         procs.append(proc)
                         proc.start()
                 for proc in procs:
@@ -107,25 +107,85 @@ class DriftDetectionQueryWorker(object):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)
 
-    def _update_on_queries(self, clazz, train_job_id, queries, query_index, logger):
-        detector_inst = clazz()
-        detector_inst.init()
-
-        logger.info('detect covariate drift')
+    def _update_on_queries(self, detector_name, clazz, train_job_id, queries, query_index, logger):
+        try:
+            logger.info('detect covariate drift')
+            logger.info('detector {} train_job_id {} queries {} query_index {}' \
+                   .format(detector_name, train_job_id, queries, query_index))
+            detector_inst = clazz()
+            detector_inst.init(ServiceType.DRIFT_QUERY, detector_name, train_job_id, logger=logger)
+            logger.info('initial_param')
+            logger.info(detector_inst._param)
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
         while True:
             try:
-                detection_result, index_of_change = detector_inst.update_on_queries(train_job_id, queries, query_index)
+                try:
+                    detection_result, index_of_change = detector_inst.update_on_queries(train_job_id, queries, query_index, logger)
+                    param_str = detector_inst.dump_parameters(logger)
+                    logger.info('updated param')
+                    logger.info(param_str)
+                    self._db.update_train_job_detector_param(train_job_id, detector_name, param_str)
+                except Exception as e:
+                    logger.error(e, exc_info=True)
+
                 if detection_result and index_of_change is not None:
+                    #drift detected
+                    logger.info('Drift is detected at query index {} with {} trend for {}th feature'.format(index_of_change, \
+                                             detector_inst._param['trend'], detector_inst._param['index']))
                     if self._client is None:
                         self._client = self._make_client()
 
-                    res = self._client.create_new_dataset(train_job_id, index_of_change)
-                    if bool(res['created']):
-                        # TODO: schedule admin to retrain the trail
-                        pass
+                    #res = self._client.create_new_dataset(train_job_id, index_of_change)
+                    res = None
+                    if res is not None and bool(res['created']):
+                        # TODO: schedule admin to retrain the trial
+                        # TODO: mark current train job drifted and no other re-training can be scheduled
+                        old_train_job = self._db.get_train_job(train_job_id)
+                        client.create_train_job(
+                            app=old_train_job.app,
+                            task=old_train_job.task,
+                            train_dataset_uri=res['train_dataset_uri'],
+                            test_dataset_uri=['test_dataset_uri'],
+                            budget_type=old_train_job.budget_type,
+                            budget_amount=old_train_job.budget_amount
+                        )
+
+                        #wait until train job completed
+                        while True:
+                            time.sleep(10)
+                            try:
+                                train_job = client.get_train_job(app=train_job.app)
+                                if train_job.get('status') == 'COMPLETED':
+                                    break
+                            except:
+                                pass
+
+                        #subscribe best trials of new train job to detectors
+                        detectors = self._db.get_train_job_detectors(old_train_job.id)
+                        for detector_name in detectors:
+                            client.subscribe_drift_detection_service_train_job(train_job.id)
+
+                        #stop old inference job
+                        client.stop_inference_job(self, app, app_version=-1)
+
+                        #deploy new inference job
+                        client.create_inference_job(app=train_job.app)
+
+                        #wait until inference job deployed
+                        while True:
+                            time.sleep(20)
+                            try:
+                                inference_job = client.get_running_inference_job(app=train_job.app)
+                                if inference_job.get('status') == 'RUNNING':
+                                    return inference_job.get('predictor_host')
+
+                            except:
+                                pass
 
             except:
+                logger.info(exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue
             else:

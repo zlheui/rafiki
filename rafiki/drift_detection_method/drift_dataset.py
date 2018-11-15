@@ -7,8 +7,9 @@ import zipfile
 import io
 
 from rafiki.constants import TaskType, DatasetProtocol
+from rafiki.utils.model import parse_model_prediction
 
-def load_dataset(uri, task):
+def load_dataset_training(uri, task, model = None):
     parsed_uri = urlparse(uri)
     protocol = '{uri.scheme}'.format(uri=parsed_uri)
     if _is_http(protocol) or _is_https(protocol):
@@ -25,7 +26,18 @@ def load_dataset(uri, task):
                             encoded = io.BytesIO(dataset.read(entry))
                             image = np.array(Image.open(encoded))
                             images.append(image)
-                return (np.array(images), np.array(labels))
+                images = np.array(images)
+                labels = np.array(labels)
+                predictions = None
+                if len(images) > 0 and model is not None:
+                    try:
+                        predictions = self._model.predict(queries)
+                        predictions = [parse_model_prediction(x) for x in predictions]
+                        predictions = np.array(np.argmax(predictions, axis=0))
+                    except Exception:
+                        pass
+
+                return (images, labels, predictions)
             else:
                 raise Exception('{} compression not supported'.format(uri))
         elif _is_feature_vector_classification(task):
@@ -44,7 +56,18 @@ def load_dataset(uri, task):
                         data_split = [row.split(",") for row in data_decoded if row != '']
                         labels.extend(np.array([row[-1] for row in data_split]))
                         features.extend(np.array([row[:-1] for row in data_split]).astype(np.float))
-                return (np.array(features), np.array(labels))
+                features = np.array(features)
+                labels = np.array(labels)
+                predictions = None
+                if len(features) > 0 and model is not None:
+                    try:
+                        predictions = self._model.predict(features)
+                        predictions = [parse_model_prediction(x) for x in predictions]
+                        predictions = np.array(np.argmax(predictions, axis=0))
+                    except Exception:
+                        pass
+
+                return (features, labels, predictions)
             else:
                 raise Exception('{} compression not supported'.format(uri))
         else:

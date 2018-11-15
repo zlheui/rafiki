@@ -36,6 +36,7 @@ class DriftDetectionFeedbackWorker(object):
                 logger.info(['{}_{}_{}'.format(a,b,c) for a,b,c in zip(train_job_ids, query_indexes, labels)])
 
                 train_job_id_to_feedbacks = {}
+                #feedback becomes a tuple of (query_index, label)
                 for (train_job_id, query_index, label) in zip(train_job_ids, query_indexes, labels):
                     if train_job_id in train_job_id_to_feedbacks:
                         train_job_id_to_feedbacks[train_job_id].append((query_index, label))
@@ -43,10 +44,12 @@ class DriftDetectionFeedbackWorker(object):
                         train_job_id_to_feedbacks[train_job_id] = [(query_index, label)]
 
                 train_job_id_to_detection_methods = {}
+                train_job_id_to_trial_ids = {}
                 detection_methods = []
                 self._db.connect()
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
+                    train_job_id_to_trial_ids[train_job_id] = trials
                     train_job_id_to_detection_methods[train_job_id] = []
                     for trial in trials:
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)
@@ -69,36 +72,39 @@ class DriftDetectionFeedbackWorker(object):
                 procs = []
                 for train_job_id,feedbacks in train_job_id_to_feedbacks.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        proc = Process(target=self._update_on_feedbacks, args=(self._detectors[detector_method], train_job_id, feedbacks))
+                        proc = Process(target=self._update_on_feedbacks, args=(self._detectors[detector_method], \
+                                  train_job_id, train_job_id_to_trial_ids[train_job_id], feedbacks))
                         procs.append(proc)
                         proc.start()
                 for proc in procs:
                     proc.join()
 
                 logger.info('finish multiprocessing')
-        
+                
             time.sleep(DRIFT_WORKER_SLEEP)
 
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
 
-    def _update_on_feedbacks(self, clazz, train_job_id, feedbacks):
-        detector_inst = clazz()
-        detector_inst.init()
-
+    def _update_on_feedbacks(self, clazz, train_job_id, trial_ids, feedbacks, querie):
         logger.info('detect real concept drift')
         while True:
             try:
-                detection_result, query_index = detector_inst.update_on_feedbacks(train_job_id, feedbacks)
-                if detection_result and query_index is not None:
-                    if self._client is None:
-                        self._client = self._make_client()
+                for trial_id in trial_ids:
+                    detector_inst = clazz()
+                    detector_inst.init()
+                    detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks)
+                    
+                    if detection_result and query_index is not None and detection_result == True:
+                        break
+                if self._client is None:
+                    self._client = self._make_client()
 
-                    res = self._client.create_new_dataset(train_job_id, query_index)
-                    if bool(res['created']):
-                        # TODO: schedule Admin to retrain the trail
-                        pass
+                #res = self._client.create_new_dataset(train_job_id, query_index)
+                if bool(res['created']):
+                    # TODO: schedule Admin to retrain the trail
+                    pass
 
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)

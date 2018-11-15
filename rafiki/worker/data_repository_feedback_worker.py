@@ -18,7 +18,7 @@ class DataRepositoryFeedbackWorker(object):
         self._cache = cache
         self._db = db
         self._service_id = service_id
-        self._cwd = '/home/zhulei/rafiki-concept-drift'
+        self._cwd = os.environ['CONCEPT_DRIFT_FOLDER']
 
     def start(self):
         logger.info('Starting data repository feedback worker for service of id {}...' \
@@ -66,7 +66,7 @@ class DataRepositoryFeedbackWorker(object):
                     else:
                         raise NotImplementedError
                     logger.info('finish storing')
-
+                self._db.disconnect()
             time.sleep(DATA_REPOSITORY_SLEEP)
 
 

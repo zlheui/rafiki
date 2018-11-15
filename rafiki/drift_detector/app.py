@@ -70,6 +70,12 @@ def subscribe(auth, trial_id, detector_name):
     with drift_detector:
         return jsonify(drift_detector.subscribe_detector(trial_id=trial_id, detector_name=detector_name))
 
+@app.route('/subscribe_train_job/<train_job_id>/<detector_name>', methods=['POST'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def subscribe_train_job(auth, train_job_id, detector_name):
+    with drift_detector:
+        return jsonify(drift_detector.subscribe_detector_train_job(train_job_id=train_job_id, detector_name=detector_name))
+
 @app.route('/detectors', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_detector(auth):

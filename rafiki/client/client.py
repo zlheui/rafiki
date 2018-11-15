@@ -476,6 +476,11 @@ class Client(object):
                         target='drift_detector')
         return data
 
+    def subscribe_drift_detection_service_train_job(self, train_job_id, detector_name):
+        data = self._post('/subscribe_train_job/'+train_job_id+'/'+detector_name,
+                        target='drift_detector')
+        return data
+
     ####################################
     # Private
     ####################################

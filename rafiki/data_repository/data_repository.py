@@ -23,7 +23,7 @@ class DataRepository(object):
     def __init__(self, db=Database(), container_manager=DockerSwarmContainerManager()):
         self._db = db
         self._services_manager = ServicesManager(db, container_manager)
-        self._cwd = '/home/zhulei/rafiki-concept-drift'
+        self._cwd = '/home/wubiao/rafiki-concept-drift'
 
 
     def list_files(self, startpath):
@@ -59,6 +59,7 @@ class DataRepository(object):
         }
 
     def create_new_dataset(self, train_job_id, query_index):
+        #TODO: filter away data before query_index
         dataset_folder = 'dataset'
         feedback_folder = 'feedback'
 
@@ -82,7 +83,7 @@ class DataRepository(object):
             if not (self._is_zip(test_uri)):
                 raise Exception('{} compression not supported'.format(test_uri))
 
-            if not self._is_image_classification(task):
+            if not self._is_image_classification(task) and not self.is_feature_vector_classification(task):
                 raise Exception('{} task not supported'.format(task))
 
             parsed_train_uri = urlparse(train_uri)
@@ -267,6 +268,9 @@ class DataRepository(object):
 
     def _is_image_classification(self, task):
         return task == TaskType.IMAGE_CLASSIFICATION
+
+    def _is_feature_vector_classification(self, task):
+        return task == TaskType.FEATURE_VECTOR_CLASSIFICATION
 
     def _zipdir(self, path, ziph):
         # ziph is zipfile handle

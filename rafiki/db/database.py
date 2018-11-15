@@ -7,7 +7,9 @@ from rafiki.constants import TrainJobStatus, \
     TrialStatus, ServiceStatus, InferenceJobStatus
 
 from .schema import Base, TrainJob, TrainJobWorker, \
-    InferenceJob, Trial, Model, User, Service, InferenceJobWorker, Prediction, Feedback, QueryStats, Detector, DriftDetectionSub
+    InferenceJob, Trial, Model, User, Service, \
+     InferenceJobWorker, Prediction, Feedback, QueryStats, \
+      Detector, DriftDetectionSub, DriftDetectionTrainJobSub, QueryIndex
 
 class Database(object):
     def __init__(self, 
@@ -25,7 +27,7 @@ class Database(object):
             user=user, 
             password=password
         )
-        
+
         self._engine = create_engine(db_connection_url)
         self._session = None
         self._define_tables()
@@ -408,12 +410,46 @@ class Database(object):
         prediction = self._session.query(Prediction).get(id)
         return prediction
 
-    def update_prediction_index(self, query_id, query_index):
-        predictions = self._session.query(Prediction).filter(Prediction.id == query_id).all()
-        for prediction in predictions:
-            prediction.query_index = query_index
-            self._session.add(prediction)
-        return query_index
+    def get_train_job_detector_param(self, train_job_id, detector_name):
+        d = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).filter(DriftDetectionTrainJobSub.detector_name == detector_name).first()
+        if d is not None:
+            return d.param
+        else:
+            return None
+
+    def get_trial_detector_param(self, trial_id, detector_name):
+        d = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).filter(DriftDetectionTSub.detector_name == detector_name).first()
+        if d is not None:
+            return d.param
+        else:
+            return None
+    def get_train_job_detectors(self, train_job_id):
+        subs = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).all()
+        return [sub.detector_name for sub in subs]
+
+    def get_trial_detectors(self, trial_id):
+        subs = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).all()
+        return [sub.detector_name for sub in subs]    
+
+    def update_train_job_detector_param(self, train_job_id, detector_name, param):
+        detector = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id and DriftDetectionTrainJobSub.detector_name == detector_name).first()
+        if detector is not None:
+            detector.param = param
+            self._session.add(detector)
+            self._session.commit()
+            return param
+        else:
+            return None
+
+    def update_trial_detector_param(self, trial_id, detector_name, param):
+        detector = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id and DriftDetectionSub.detector_name == detector_name).first()
+        if detector is not None:
+            detector.param = param
+            self._session.add(detector)
+            self._session.commit()
+            return param
+        else:
+            return None
 
     ####################################
     # Feedback for Concept drift
@@ -426,6 +462,27 @@ class Database(object):
         )
         self._session.add(feedback)
         return feedback
+
+    ####################################
+    # QueryIndex for Concept Drift
+    ####################################
+
+    def create_query_index(self, id):
+        query_index = QueryIndex(
+            id = id
+        )
+        self._session.add(query_index)
+        return query_index
+
+    def get_query_index(self, id):
+        query_index = self._session.query(QueryIndex).get(id)
+        return query_index
+
+    def update_query_index(self, query_id, query_index):
+        query = self._session.query(QueryIndex).get(query_id)
+        query.query_index = query_index
+        self._session.add(query)
+        return query
 
     ####################################
     # Detector for Concept drift
@@ -457,8 +514,20 @@ class Database(object):
         self._session.add(detector_sub)
         return detector_sub
 
+    def create_detector_train_job_sub(self, train_job_id, detector_name):
+        detector_sub = DriftDetectionTrainJobSub(
+            train_job_id = train_job_id,
+            detector_name = detector_name
+        )
+        self._session.add(detector_sub)
+        return detector_sub
+
     def get_detector_subscriptions_by_trial_id(self, trial_id):
         detector_subs = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).all()
+        return detector_subs
+
+    def get_detector_subscriptions_by_train_job_id(self, train_job_id):
+        detector_subs = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).all()
         return detector_subs
 
     ####################################
@@ -469,8 +538,9 @@ class Database(object):
         self.connect()
 
     def connect(self):
-        Session = sessionmaker(bind=self._engine.execution_options(isolation_level=self._isolation_level))
-        self._session = Session()
+        if self._session is None:
+            Session = sessionmaker(bind=self._engine.execution_options(isolation_level=self._isolation_level))
+            self._session = Session()
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.disconnect()

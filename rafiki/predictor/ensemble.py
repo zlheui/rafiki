@@ -13,7 +13,7 @@ def ensemble_predictions(predictions_list, predict_label_mappings, task):
     predictions = predictions_list[index]
     predict_label_mapping = predict_label_mappings[index]
 
-    if task == TaskType.IMAGE_CLASSIFICATION:
+    if task == TaskType.IMAGE_CLASSIFICATION or task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
         # Map probabilities to most probable label
         pred_indices = np.argmax(predictions, axis=1)
         predictions = [predict_label_mapping[str(i)] for i in pred_indices]

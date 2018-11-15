@@ -66,6 +66,7 @@ class DataRepositoryFeedbackWorker(object):
                     else:
                         raise NotImplementedError
                     logger.info('finish storing')
+                self._db.disconnect()
 
             time.sleep(DATA_REPOSITORY_SLEEP)
 

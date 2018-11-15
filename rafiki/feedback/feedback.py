@@ -28,6 +28,7 @@ class Feedback(object):
             self._db.connect()
             feedback = self._db.create_feedback(query_index=int(query_index), label=label)
             self._db.commit()
+            self._db.disconnect()
             label_is_none = False
             is_added = True
 

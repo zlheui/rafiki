@@ -38,6 +38,7 @@ class BaseMethod(abc.ABC):
         query_index = query_stats.next_query_index
         self._db.update_query_stats(query_stats, query_index+len(queries))
         self._db.commit()
+        self._db.disconnect()
 
         logger.info('upload use cache')
         # use cache to send the queries to data repository, only one worker is available

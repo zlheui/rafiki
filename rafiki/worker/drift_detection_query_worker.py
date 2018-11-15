@@ -66,6 +66,7 @@ class DriftDetectionQueryWorker(object):
                     clazz = load_detector_class(detector.detector_file_bytes, detector.detector_class)
                     self._detectors[detector_name] = clazz
                 self._db.commit()
+                self._db.disconnect()
 
                 logger.info('multiprocessing for uploading datasets')
                 procs = []

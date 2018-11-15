@@ -84,6 +84,8 @@ class Predictor(object):
 
             time.sleep(PREDICTOR_PREDICT_SLEEP)
 
+        self._db.disconnect()
+        
         logger.info('Predictions:')
         logger.info(worker_to_prediction)
 

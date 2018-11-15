@@ -63,6 +63,7 @@ class DataRepositoryQueryWorker(object):
                         raise NotImplementedError
                     logger.info('finish storing')
                 self._db.commit()
+                self._db.disconnect()
 
             time.sleep(DATA_REPOSITORY_SLEEP)
 

@@ -28,7 +28,7 @@ class Feedback(object):
             self._db.connect()
             feedback = self._db.create_feedback(query_index=int(query_index), label=label)
             self._db.commit()
-            self._db.disconnect()
+            
             label_is_none = False
             is_added = True
 
@@ -42,5 +42,6 @@ class Feedback(object):
                 running_data_repository_worker_ids = self._cache.get_data_repository_workers(ServiceType.REPOSITORY_FEEDBACK)
                 if len(running_data_repository_worker_ids) > 0:
                     data_repo_feedback_id = self._cache.add_feedback_of_worker(running_data_repository_worker_ids[0], train_job_id, feedback.id, query_index, label)
-        
+            self._db.disconnect()
+
         return {'query_index': query_index, 'is_added': is_added, 'label_is_none': label_is_none} 

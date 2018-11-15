@@ -42,7 +42,7 @@ class DataRepositoryQueryWorker(object):
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
-                            logger.info('query')
+                            logger.info('query' + str(tmp_index))
                             logger.info(query)
                             # update query index in the database
                             self._db.update_query_index(query[0], str(tmp_index))
@@ -54,6 +54,8 @@ class DataRepositoryQueryWorker(object):
                     elif train_job.task == TaskType.FEATURE_VECTOR_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
+                            logger.info('query' + str(tmp_index))
+                            logger.info(query)
                             # update query index in the database
                             self._db.update_query_index(query[0], str(tmp_index))
                             with open(os.path.join(self._cwd, train_job_id, 'query', Prefixes.Drift+'_'+str(tmp_index)+'.csv'), 'w') as f:

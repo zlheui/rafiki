@@ -37,7 +37,7 @@ class Feedback(object):
                 # send feedback to drift detector
                 running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_FEEDBACK)
                 if len(running_drift_detection_worker_ids) > 0:
-                    partition = train_job_id.int%len(running_drift_detection_worker_ids)
+                    partition = uuid.UUID(train_job_id).int%len(running_drift_detection_worker_ids)
                     con_drift_feedback_id = self._cache.add_feedback_of_worker(running_drift_detection_worker_ids[partition], train_job_id, feedback.id, query_index, label)
                 # send feedback to data repository
                 running_data_repository_worker_ids = self._cache.get_data_repository_workers(ServiceType.REPOSITORY_FEEDBACK)

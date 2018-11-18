@@ -16,6 +16,7 @@ import random
 import shutil
 
 from rafiki.constants import TaskType, DatasetProtocol
+from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class DataRepositoryRetrainWorker(object):
         while True:
            time.sleep(10)
            try:
-               train_job = self._client.get_train_job(app=train_job.app)
+               train_job = self._client.get_train_job(app=old_train_job.app)
                if train_job.get('status') == 'COMPLETED':
                    break
            except:
@@ -69,7 +70,7 @@ class DataRepositoryRetrainWorker(object):
         logger.info('Finish creating new train job')
 
         logger.info('Subscribe new train job best trials')
-        trials = self._db.get_best_trials_of_train_job(self._train_job_id)
+        trials = self._db.get_best_trials_of_train_job(train_job.id)
         detectors = self._db.get_all_detectors()
         for trial in trials:
             for detector in detectors:
@@ -81,7 +82,7 @@ class DataRepositoryRetrainWorker(object):
         client.stop_inference_job(self, app, app_version=old_train_job.app_version)
 
         #deploy new inference job
-        client.create_inference_job(app=train_job.app, app_version=old_train_job.app_version+1)
+        client.create_inference_job(app=train_job.app, app_version=train_job.app_version)
 
 
     def create_new_dataset(self):

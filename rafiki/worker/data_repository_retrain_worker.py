@@ -252,8 +252,8 @@ class DataRepositoryRetrainWorker(object):
         os.chdir(original_wd)
 
         return {
-            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip')),
-            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip'))
+            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['train']+'.zip')),
+            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['test']+'.zip'))
         }
 
     def stop(self):
@@ -266,16 +266,16 @@ class DataRepositoryRetrainWorker(object):
         admin_port = os.environ['ADMIN_PORT']
         advisor_host = os.environ['ADVISOR_HOST']
         advisor_port = os.environ['ADVISOR_PORT']
-        data_repository_host = os.environ['DATA_REPOSITORY_HOST']
-        data_repository_port = os.environ['DATA_REPOSITORY_PORT']
+        drift_detector_host = os.environ['DRIFT_DETECTOR_HOST']
+        drift_detector_port = os.environ['DRIFT_DETECTOR_PORT']
         superadmin_email = SUPERADMIN_EMAIL
         superadmin_password = SUPERADMIN_PASSWORD
         client = Client(admin_host=admin_host, 
                         admin_port=admin_port, 
                         advisor_host=advisor_host,
                         advisor_port=advisor_port,
-                        data_repository_host=data_repository_host,
-                        data_repository_port=data_repository_port)
+                        drift_detector_host=drift_detector_host,
+                        drift_detector_port=drift_detector_port)
         client.login(email=superadmin_email, password=superadmin_password)
         return client
 

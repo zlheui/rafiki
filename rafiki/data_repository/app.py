@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 import traceback
 import zipfile
+import io
 
 from rafiki.constants import UserType, ServiceType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
@@ -60,13 +61,9 @@ def hello():
     return jsonify({'hello':'hello'})
 
 @app.route(os.environ['CONCEPT_DRIFT_FOLDER']+'/<train_job_id>/dataset/<zip_file_name>', methods=['GET'])
-@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def download(auth, train_job_id, zip_file_name):
-    zipf = zipfile.ZipFile(os.environ['CONCEPT_DRIFT_FOLDER']+'/'+train_job_id+'/dataset/'+zip_file_name, 'r', zipfile.ZIP_DEFLATED)
+def download(train_job_id, zip_file_name):
     return send_file(
-        zfile,
-        mimetype='application/zip',
-        as_attachment=True,
+        os.environ['CONCEPT_DRIFT_FOLDER']+'/'+train_job_id+'/dataset/'+zip_file_name,
         attachment_filename=zip_file_name)
 
 @app.route('/data_repository/query', methods=['POST'])

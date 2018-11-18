@@ -26,8 +26,10 @@ class DataRepositoryRetrainWorker(object):
         self._train_job_id = train_job_id
         self._query_index = query_index
         self._dataset_folder = 'dataset'
-        self._dataset_folder = 'feedback'
+        self._feedback_folder = 'feedback'
         self._db = db
+        self._db.connect()
+        self._db_connected = False
         self._client = None
 
 
@@ -41,7 +43,6 @@ class DataRepositoryRetrainWorker(object):
 
 
         logger.info('Create new train job')
-        self._db.connect()
         old_train_job = self._db.get_train_job(self._train_job_id)
         if self._client == None:
             self._client = self._make_client()
@@ -175,7 +176,7 @@ class DataRepositoryRetrainWorker(object):
                     for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder)):
                         # only add files until the query_index
                         file_index = int(file.split('.')[0].split('_')[1])
-                        if file_index < self._query_index:
+                        if file_index < int(self._query_index):
                             if folder in feedback_info:
                                 feedback_info[folder].append(file)
                             else:

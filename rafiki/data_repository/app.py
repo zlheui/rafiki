@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import os
 import traceback
+import zipfile
 
 from rafiki.constants import UserType, ServiceType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
@@ -57,6 +58,16 @@ def remove_all_folders(auth):
 @app.route('/hello', methods=['GET'])
 def hello():
     return jsonify({'hello':'hello'})
+
+@app.route(os.environ['CONCEPT_DRIFT_FOLDER']+'/<train_job_id>/dataset/<zip_file_name>', methods=['GET'])
+@auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
+def download(auth, train_job_id, zip_file_name):
+    zipf = zipfile.ZipFile(os.environ['CONCEPT_DRIFT_FOLDER']+'/'+train_job_id+'/dataset/'+zip_file_name, 'r', zipfile.ZIP_DEFLATED)
+    return send_file(
+        zfile,
+        mimetype='application/zip',
+        as_attachment=True,
+        attachment_filename=zip_file_name)
 
 @app.route('/data_repository/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])

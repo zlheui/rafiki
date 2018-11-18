@@ -29,11 +29,11 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 
 try:
     if service_type == ServiceType.DRIFT_QUERY:
-        from rafiki.worker import DriftDetectionQueryWorker
+        from rafiki.worker.drift_detection_query_worker import DriftDetectionQueryWorker
         worker = DriftDetectionQueryWorker(service_id)
         worker.start()
     elif service_type == ServiceType.DRIFT_FEEDBACK:
-        from rafiki.worker import DriftDetectionFeedbackWorker
+        from rafiki.worker.drift_detection_feedback_worker import DriftDetectionFeedbackWorker
         worker = DriftDetectionFeedbackWorker(service_id)
         worker.start()
     else:

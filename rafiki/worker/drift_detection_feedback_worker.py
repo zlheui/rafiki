@@ -18,7 +18,7 @@ class DriftDetectionFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
-        self._db_connected = False
+        self._db.connect()
         self._service_id = service_id
         self._detectors = {}
 
@@ -46,9 +46,7 @@ class DriftDetectionFeedbackWorker(object):
 
                 train_job_id_to_detection_methods = {}
                 detection_methods = []
-                if not self._db_connected:
-                    self._db.connect()
-                    self._db_connected = True
+                
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_detection_methods[train_job_id] = []

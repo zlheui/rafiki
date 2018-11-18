@@ -1,0 +1,297 @@
+import time
+import logging
+import os
+import traceback
+import pprint
+
+from rafiki.constants import ServiceType, TaskType, Prefixes
+from rafiki.db import Database
+from rafiki.client import Client
+
+import pickle
+import requests
+import zipfile
+from urllib.parse import urlparse
+import random
+import shutil
+
+from rafiki.constants import TaskType, DatasetProtocol
+
+logger = logging.getLogger(__name__)
+
+class DataRepositoryRetrainWorker(object):
+    def __init__(self, service_id, train_job_id, query_index, db=Database()):
+        self._service_id = service_id
+        self._cwd = os.environ['CONCEPT_DRIFT_FOLDER']
+        self._train_job_id = train_job_id
+        self._query_index = query_index
+        self._dataset_folder = 'dataset'
+        self._dataset_folder = 'feedback'
+        self._db = db
+        self._client = None
+
+
+    def start(self):
+        logger.info('Starting data repository retrain worker for service of id {}...' \
+            .format(self._service_id))
+
+        logger.info('Create new dataset')
+        uris = self.create_new_dataset()
+        logger.info('Finish creating new dataset')
+
+
+        logger.info('Create new train job')
+        self._db.connect()
+        old_train_job = self._db.get_train_job(self._train_job_id)
+        if self._client == None:
+            self._client = self._make_client()
+
+        self._client.create_train_job(
+           app=old_train_job.app,
+           task=old_train_job.task,
+           train_dataset_uri=uris['train_dataset_uri'],
+           test_dataset_uri=uris['test_dataset_uri'],
+           budget_type=old_train_job.budget_type,
+           budget_amount=old_train_job.budget_amount
+        )
+
+        #wait until train job completed
+        while True:
+           time.sleep(10)
+           try:
+               train_job = self._client.get_train_job(app=train_job.app)
+               if train_job.get('status') == 'COMPLETED':
+                   break
+           except:
+               pass
+
+        logger.info('Finish creating new train job')
+
+        logger.info('Subscribe new train job best trials')
+        trials = self._db.get_best_trials_of_train_job(self._train_job_id)
+        detectors = self._db.get_all_detectors()
+        for trial in trials:
+            for detector in detectors:
+                self._client.subscribe_drift_detection_service(trial.id, detector.name)
+
+        logger.info('Finish subscribing best trials')
+
+        #stop old inference job
+        client.stop_inference_job(self, app, app_version=old_train_job.app_version)
+
+        #deploy new inference job
+        client.create_inference_job(app=train_job.app, app_version=old_train_job.app_version+1)
+
+
+    def create_new_dataset(self):
+        random.seed(0)
+
+        dataset_info = {}
+        if os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, 'dataset_info.pkl')):
+            dataset_info = pickle.load(open(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, 'dataset_info.pkl'), 'rb'))
+        else:
+            if not os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder)):
+                os.makedirs(os.path.join(self._cwd, self._train_job_id, self._dataset_folder))
+
+            train_job = self._db.get_train_job(self._train_job_id)
+            train_uri = train_job.train_dataset_uri
+            test_uri = train_job.test_dataset_uri
+            task = train_job.task
+
+            if not (self._is_zip(train_uri)):
+                raise Exception('{} compression not supported'.format(train_uri))
+
+            if not (self._is_zip(test_uri)):
+                raise Exception('{} compression not supported'.format(test_uri))
+
+            if not self._is_image_classification(task):
+                raise Exception('{} task not supported'.format(task))
+
+            parsed_train_uri = urlparse(train_uri)
+            parsed_test_uri = urlparse(test_uri)
+            train_protocol = '{uri.scheme}'.format(uri=parsed_train_uri)
+            test_protocol = '{uri.scheme}'.format(uri=parsed_test_uri)
+            
+            if not (self._is_http(train_protocol) or self._is_https(train_protocol)):
+                raise Exception('Dataset URI scheme not supported: {}'.format(train_protocol))
+
+            if not (self._is_http(test_protocol) or self._is_https(test_protocol)):
+                raise Exception('Dataset URI scheme not supported: {}'.format(test_protocol))
+
+            train_file_name = os.path.basename(parsed_train_uri.path)
+            test_file_name = os.path.basename(parsed_test_uri.path)
+            train_folder = train_file_name.split('.')[0]
+            test_folder = test_file_name.split('.')[0]
+
+            uri_pairs = [(train_uri,train_file_name), (test_uri,test_file_name)]
+
+            for uri,file_name in uri_pairs:
+                response = requests.get(uri, stream=True)
+                handle = open(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, file_name), "wb")
+                for chunk in response.iter_content(chunk_size=512):
+                    if chunk:  # filter out keep-alive new chunks
+                        handle.write(chunk)
+                handle.close()
+
+                with zipfile.ZipFile(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, file_name)) as zf:
+                    zf.extractall(os.path.join(self._cwd, self._train_job_id, self._dataset_folder))
+
+            dataset_info['version'] = 1
+            dataset_info['train'] = train_folder
+            dataset_info['test'] = test_folder
+            dataset_info[train_folder] = {}
+            dataset_info[test_folder] = {}
+
+            data_folders = [train_folder, test_folder]
+
+            # TODO: check the folder structure after extraction
+            for folder in data_folders:
+                for folder1 in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
+                    if os.path.isdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
+                        for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
+                            if folder1 in dataset_info[folder]:
+                                dataset_info[folder][folder1].append(file)
+                            else:
+                                dataset_info[folder][folder1] = [file]
+
+            # sort the files in each folder according to the added-in order
+            for folder in data_folders:
+                for label,files in dataset_info[folder].items():
+                    random.shuffle(files)
+
+            for folder in data_folders:
+                for label,files in dataset_info[folder].items():
+                    print(len(files))
+
+        train_folder = dataset_info['train']
+        test_folder = dataset_info['test']
+        data_folders = [train_folder, test_folder]
+
+        feedback_info = {}
+
+        for folder in os.listdir(os.path.join(self._cwd, self._train_job_id, self._feedback_folder)):
+            if os.path.isdir(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder)):
+                if folder in dataset_info[train_folder] and folder in dataset_info[test_folder]:
+                    for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder)):
+                        # only add files until the query_index
+                        file_index = int(file.split('.')[0].split('_')[1])
+                        if file_index < self._query_index:
+                            if folder in feedback_info:
+                                feedback_info[folder].append(file)
+                            else:
+                                feedback_info[folder] = [file]
+
+        for folder, files in feedback_info.items():
+            files.sort(key=lambda x: int(x.split('.')[0].split('_')[1]), reverse=True)
+
+        print(feedback_info)
+
+        train_folder = dataset_info['train']
+        test_folder = dataset_info['test']
+        data_folders = [train_folder, test_folder]
+
+        assign_files = {}
+        assign_files[train_folder] = {}
+        assign_files[test_folder] = {}
+
+        for folder, files in feedback_info.items():
+            train_size = len(dataset_info[train_folder][folder])
+            test_size = len(dataset_info[test_folder][folder])
+            for file in files:
+                if random.randint(0, train_size+test_size) < train_size:
+                    if folder in assign_files[train_folder]:
+                        assign_files[train_folder][folder].append(file)
+                    else:
+                        assign_files[train_folder][folder] = [file]
+                else:
+                    if folder in assign_files[test_folder]:
+                        assign_files[test_folder][folder].append(file)
+                    else:
+                        assign_files[test_folder][folder] = [file]
+
+        print(assign_files)
+
+        # create new dataset
+        for data_folder in data_folders:
+            for folder,content in assign_files[data_folder].items():
+                replace_size = len(content)
+                original_size = len(dataset_info[data_folder][folder])
+                if replace_size > original_size:
+                    replace_size = original_size
+            
+                for i in range(original_size-replace_size, original_size):
+                    os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, folder, dataset_info[data_folder][folder][i]))
+                for i in range(0, replace_size):
+                    shutil.move(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder, content[i]), os.path.join(self._cwd, self._train_job_id, \
+                        self._dataset_folder, data_folder, folder, content[i]))
+                tmp_list = dataset_info[data_folder][folder][:(original_size-replace_size)]
+                dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
+
+        # store dataset_info
+        dataset_info['version'] += 1
+        pickle.dump(dataset_info, open(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, 'dataset_info.pkl'), 'wb'))
+
+        # remove original zip
+        if os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['train']+'.zip')):
+            os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['train']+'.zip'))
+        if os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['test']+'.zip')):
+            os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['test']+'.zip'))
+
+        original_wd = os.getcwd()
+        print(original_wd)
+        os.chdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder))
+        zipf = zipfile.ZipFile(dataset_info['train']+'.zip', 'w', zipfile.ZIP_DEFLATED)
+        self._zipdir(dataset_info['train'], zipf)
+        zipf.close()
+
+        zipf = zipfile.ZipFile(dataset_info['test']+'.zip', 'w', zipfile.ZIP_DEFLATED)
+        self._zipdir(dataset_info['test'], zipf)
+        zipf.close()
+
+        os.chdir(original_wd)
+
+        return {
+            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip')),
+            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip'))
+        }
+
+    def stop(self):
+        logger.info('Stopping data repository retrain worker for service of id {}...' \
+            .format(self._service_id))
+        self._db.disconnect()
+
+    def _make_client(self):
+        admin_host = os.environ['ADMIN_HOST']
+        admin_port = os.environ['ADMIN_PORT']
+        advisor_host = os.environ['ADVISOR_HOST']
+        advisor_port = os.environ['ADVISOR_PORT']
+        data_repository_host = os.environ['DATA_REPOSITORY_HOST']
+        data_repository_port = os.environ['DATA_REPOSITORY_PORT']
+        superadmin_email = SUPERADMIN_EMAIL
+        superadmin_password = SUPERADMIN_PASSWORD
+        client = Client(admin_host=admin_host, 
+                        admin_port=admin_port, 
+                        advisor_host=advisor_host,
+                        advisor_port=advisor_port,
+                        data_repository_host=data_repository_host,
+                        data_repository_port=data_repository_port)
+        client.login(email=superadmin_email, password=superadmin_password)
+        return client
+
+    def _is_zip(self, uri):
+        return '.zip' in uri
+
+    def _is_http(self, protocol):
+        return protocol == DatasetProtocol.HTTP
+
+    def _is_https(self, protocol):
+        return protocol == DatasetProtocol.HTTPS
+
+    def _is_image_classification(self, task):
+        return task == TaskType.IMAGE_CLASSIFICATION
+
+    def _zipdir(self, path, ziph):
+        # ziph is zipfile handle
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                ziph.write(os.path.join(root, file))

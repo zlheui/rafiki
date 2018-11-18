@@ -16,6 +16,36 @@ class ServicesManager(object):
         self._container_manager = container_manager
         self._service_ids = {}
 
+    def create_retrain_service(self, train_job_id, query_index):
+        environment_vars = {
+            'POSTGRES_HOST': os.environ['POSTGRES_HOST'],
+            'POSTGRES_PORT': os.environ['POSTGRES_PORT'],
+            'POSTGRES_USER': os.environ['POSTGRES_USER'],
+            'POSTGRES_DB': os.environ['POSTGRES_DB'],
+            'POSTGRES_PASSWORD': os.environ['POSTGRES_PASSWORD'],
+            'LOGS_FOLDER_PATH': os.environ['LOGS_FOLDER_PATH'],
+            'CONCEPT_DRIFT_FOLDER': os.environ['CONCEPT_DRIFT_FOLDER'],
+            'REDIS_HOST': os.environ['REDIS_HOST'],
+            'REDIS_PORT': os.environ['REDIS_PORT'],
+            'ADMIN_HOST': os.environ['ADMIN_HOST'],
+            'ADMIN_PORT': os.environ['ADMIN_PORT'],
+            'ADVISOR_HOST': os.environ['ADVISOR_HOST'],
+            'ADVISOR_PORT': os.environ['ADVISOR_PORT'],
+            'TRAIN_JOB_ID': train_job_id,
+            'QUERY_INDEX': query_index
+        }
+
+        service = self._create_service(
+            service_type=ServiceType.REPOSITORY_RETRAIN,
+            docker_image=os.environ['RAFIKI_IMAGE_DATA_REPOSITORY_WORKER']+':'+os.environ['RAFIKI_VERSION'],
+            replicas=1,
+            environment_vars=environment_vars
+        )
+
+        self._service_ids[service_type] = service.id
+
+        return service
+
     def create_data_repository_service(self, service_type):
         replicas = self._compute_data_repository_worker_replicas()
 

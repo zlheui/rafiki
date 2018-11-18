@@ -434,6 +434,10 @@ class Database(object):
         self._session.add(detector)
         return detector
 
+    def get_all_detectors(self):
+        detectors = self._session.query(Detector).all()
+        return detectors
+
     def get_detector_by_name(self, detector_name):
         detector = self._session.query(Detector).filter(Detector.name == detector_name).first()
         return detector

@@ -36,6 +36,12 @@ try:
         from rafiki.worker import DataRepositoryFeedbackWorker
         worker = DataRepositoryFeedbackWorker(service_id)
         worker.start()
+    elif service_type == ServiceType.REPOSITORY_RETRAIN:
+        from rafiki.worker import DataRepositoryRetrainWorker
+        train_job_id = os.environ['Train_JOB_ID']
+        query_index = os.environ['QUERY_INDEX']
+        worker = DataRepositoryRetrainWorker(service_id, train_job_id, query_index)
+        worker.start()
     else:
         raise Exception('Invalid service type: {}'.format(service_type))
     exit_worker()

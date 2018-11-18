@@ -10,6 +10,7 @@ from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
 from rafiki.constants import ServiceType
+from rafiki.client import Client
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +97,9 @@ class DriftDetectionFeedbackWorker(object):
                     if self._client is None:
                         self._client = self._make_client()
 
-                    res = self._client.create_new_dataset(train_job_id, query_index)
+                    res = self._client.create_retrain_service(train_job_id, query_index)
                     if bool(res['created']):
-                        # TODO: schedule Admin to retrain the trail
-                        pass
+                        break
 
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)

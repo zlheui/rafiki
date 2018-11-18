@@ -70,19 +70,35 @@ class DataRepositoryRetrainWorker(object):
         logger.info('Finish creating new train job')
 
         logger.info('Subscribe new train job best trials')
-        trials = self._db.get_best_trials_of_train_job(train_job.id)
+        trials = self._db.get_best_trials_of_train_job(train_job['id'])
         detectors = self._db.get_all_detectors()
         for trial in trials:
             for detector in detectors:
                 self._client.subscribe_drift_detection_service(trial.id, detector.name)
+        self._db.commit()
 
         logger.info('Finish subscribing best trials')
 
+
         #stop old inference job
-        client.stop_inference_job(self, app, app_version=old_train_job.app_version)
+        self._client.stop_inference_job(app=old_train_job.app, app_version=old_train_job.app_version)
+
+        # wait for a while to make sure no queries sent to predictor
+        time.sleep(5)
+
+        logger.info('Update new train job next query index')
+        old_query_stats = self._db.get_query_stats_by_train_job_id(old_train_job.id)
+        query_stats = self._db.get_query_stats_by_train_job_id(train_job['id'])
+        if query_stats is None:
+            query_stats = self._db.create_query_stats(train_job['id'])
+            self._db.commit()
+        self._db.update_query_stats(query_stats, old_query_stats.next_query_index)
+        self._db.commit()
+
+        logger.info('Finish updating new train job next query index')
 
         #deploy new inference job
-        client.create_inference_job(app=train_job.app, app_version=train_job.app_version)
+        self._client.create_inference_job(app=train_job['app'], app_version=train_job['app_version'])
 
 
     def create_new_dataset(self):

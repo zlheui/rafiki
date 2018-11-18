@@ -33,6 +33,8 @@ class ServicesManager(object):
             'ADVISOR_PORT': os.environ['ADVISOR_PORT'],
             'DRIFT_DETECTOR_HOST': os.environ['DRIFT_DETECTOR_HOST'],
             'DRIFT_DETECTOR_PORT': os.environ['DRIFT_DETECTOR_PORT'],
+            'DATA_REPOSITORY_HOST': os.environ['DATA_REPOSITORY_HOST'],
+            'DATA_REPOSITORY_PORT': os.environ['DATA_REPOSITORY_PORT'],
             'TRAIN_JOB_ID': train_job_id,
             'QUERY_INDEX': query_index
         }

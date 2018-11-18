@@ -253,8 +253,10 @@ class DataRepositoryRetrainWorker(object):
         os.chdir(original_wd)
 
         return {
-            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['train']+'.zip')),
-            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['test']+'.zip'))
+            'train_dataset_uri': 'http://{}:{}{}'.format(os.environ['DATA_REPOSITORY_HOST'], os.environ['DATA_REPOSITORY_PORT'], \
+                os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['train']+'.zip')),
+            'test_dataset_uri': 'http://{}:{}{}'.format(os.environ['DATA_REPOSITORY_HOST'], os.environ['DATA_REPOSITORY_PORT'], \
+                os.path.join(self._cwd, self._train_job_id, self._dataset_folder, dataset_info['test']+'.zip'))
         }
 
     def stop(self):

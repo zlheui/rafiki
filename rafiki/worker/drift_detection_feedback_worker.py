@@ -18,6 +18,7 @@ class DriftDetectionFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
+        self._db_connected = False
         self._service_id = service_id
         self._detectors = {}
 
@@ -45,7 +46,9 @@ class DriftDetectionFeedbackWorker(object):
 
                 train_job_id_to_detection_methods = {}
                 detection_methods = []
-                self._db.connect()
+                if not self._db_connected:
+                    self._db.connect()
+                    self._db_connected = True
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_detection_methods[train_job_id] = []
@@ -65,7 +68,6 @@ class DriftDetectionFeedbackWorker(object):
                     clazz = load_detector_class(detector.detector_file_bytes, detector.detector_class)
                     self._detectors[detector_name] = clazz
                 self._db.commit()
-                self._db.disconnect()
 
                 logger.info('start multiprocessing')
                 procs = []
@@ -84,6 +86,7 @@ class DriftDetectionFeedbackWorker(object):
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
+        self._db.disconnect()
 
     def _update_on_feedbacks(self, clazz, train_job_id, feedbacks):
         detector_inst = clazz()

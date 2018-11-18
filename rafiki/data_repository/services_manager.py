@@ -42,7 +42,7 @@ class ServicesManager(object):
             environment_vars=environment_vars
         )
 
-        self._service_ids[service_type] = service.id
+        self._service_ids[ServiceType.REPOSITORY_RETRAIN] = service.id
 
         return service
 

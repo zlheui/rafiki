@@ -9,7 +9,7 @@ import io
 from rafiki.constants import TaskType, DatasetProtocol
 from rafiki.utils.model import parse_model_prediction
 
-def load_dataset_training(uri, task, model = None):
+def load_dataset_training(uri, task, model = None, logger = None):
     parsed_uri = urlparse(uri)
     protocol = '{uri.scheme}'.format(uri=parsed_uri)
     if _is_http(protocol) or _is_https(protocol):
@@ -31,7 +31,7 @@ def load_dataset_training(uri, task, model = None):
                 predictions = None
                 if len(images) > 0 and model is not None:
                     try:
-                        predictions = self._model.predict(queries)
+                        predictions = model.predict(queries)
                         predictions = [parse_model_prediction(x) for x in predictions]
                         predictions = np.array(np.argmax(predictions, axis=0))
                     except Exception:
@@ -57,15 +57,16 @@ def load_dataset_training(uri, task, model = None):
                         labels.extend(np.array([row[-1] for row in data_split]))
                         features.extend(np.array([row[:-1] for row in data_split]).astype(np.float))
                 features = np.array(features)
-                labels = np.array(labels)
+                inv_mapping = {v: int(k) for (k, v) in model.get_predict_label_mapping()}
+                labels = np.array([inv_mapping[label] for label in labels])
                 predictions = None
                 if len(features) > 0 and model is not None:
                     try:
-                        predictions = self._model.predict(features)
+                        predictions = model.predict(features)
                         predictions = [parse_model_prediction(x) for x in predictions]
                         predictions = np.array(np.argmax(predictions, axis=0))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        log.error(e, exc_info=True)
 
                 return (features, labels, predictions)
             else:

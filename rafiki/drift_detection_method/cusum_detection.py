@@ -164,6 +164,7 @@ class CUSUMDetector(BaseMethod):
                     return 
         
         return False, None
+
     def _load_model(self, trial_id):
         trial = self._db.get_trial(trial_id)
         model = self._db.get_model(trial.model_id)
@@ -187,9 +188,7 @@ class CUSUMDetector(BaseMethod):
 
     def _load_dataset_training(self, uri, task, model = None, logger = None):
         # Here, we use drift detection model's in-built dataset loader
-        (X, y, yp) = load_dataset_training(uri, task, model)
-        logger.info(y)
-        logger.info(yp)
+        (X, y, yp) = load_dataset_training(uri, task, model, logger)
         X = self._prepare_X(X)
         if self._param['status'] == 'uninitialized':
             self._param['ncol'] = len(X[0])

@@ -9,7 +9,9 @@ from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
+from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.constants import ServiceType
+from rafiki.client import Client
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,7 @@ class DriftDetectionFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
+        self._db.connect()
         self._service_id = service_id
         self._detectors = {}
 
@@ -46,7 +49,7 @@ class DriftDetectionFeedbackWorker(object):
                 train_job_id_to_detection_methods = {}
                 train_job_id_to_trial_ids = {}
                 detection_methods = []
-                self._db.connect()
+                
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_trial_ids[train_job_id] = trials
@@ -86,6 +89,7 @@ class DriftDetectionFeedbackWorker(object):
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
+        self._db.disconnect()
 
     def _update_on_feedbacks(self, clazz, train_job_id, trial_ids, feedbacks, querie):
         logger.info('detect real concept drift')
@@ -97,15 +101,11 @@ class DriftDetectionFeedbackWorker(object):
                     detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks)
                     
                     if detection_result and query_index is not None and detection_result == True:
-                        break
-                if self._client is None:
-                    self._client = self._make_client()
-
-                #res = self._client.create_new_dataset(train_job_id, query_index)
-                if bool(res['created']):
-                    # TODO: schedule Admin to retrain the trail
-                    pass
-
+                        if self._client is None:
+                            self._client = self._make_client()
+                        #res = self._client.create_retrain_service(train_job_id, query_index)
+                        if bool(res['created']):
+                            break
             except:
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue

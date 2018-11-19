@@ -20,10 +20,12 @@ def load_dataset(uri, task):
                 with zipfile.ZipFile(io.BytesIO(r.content)) as dataset:
                     for entry in dataset.namelist():
                         if entry.endswith('.png') or entry.endswith('.jpg') or entry.endswith('.jpeg'):
-                            label = entry.split('/')[-2]
-                            labels.append(label)
                             encoded = io.BytesIO(dataset.read(entry))
                             image = np.array(Image.open(encoded))
+                            if len(image.shape) != 2:
+                                continue
+                            label = entry.split('/')[-2]
+                            labels.append(label)
                             images.append(image)
                 return (np.array(images), np.array(labels))
             else:

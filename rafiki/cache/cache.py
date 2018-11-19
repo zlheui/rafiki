@@ -95,8 +95,22 @@ class Cache(object):
 
     def pop_queries_of_drift_detection_worker(self, worker_id, batch_size):
         worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
-        queries = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
-        self._redis.ltrim(worker_queries_key, len(queries), -1)
+
+        queries = None
+        with self._redis.pipeline() as pipe:
+            while True:
+                try:
+                    pipe.watch(worker_queries_key)
+                    queries = pipe.lrange(worker_queries_key, 0, batch_size-1)
+                    pipe.multi()
+                    pipe.ltrim(worker_queries_key, len(queries), -1)
+                    pipe.execute()
+                    break
+                except redis.WatchError:
+                    continue
+                finally:
+                    pipe.reset()
+
         queries = [json.loads(x) for x in queries]
         query_ids = [x['id'] for x in queries]
         train_job_ids = [x['train_job_id'] for x in queries]
@@ -116,8 +130,22 @@ class Cache(object):
 
     def pop_queries_of_data_repository_worker(self, worker_id, batch_size):
         worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
-        data = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
-        self._redis.ltrim(worker_queries_key, len(data), -1)
+
+        data = None
+        with self._redis.pipeline() as pipe:
+            while True:
+                try:
+                    pipe.watch(worker_queries_key)
+                    data = pipe.lrange(worker_queries_key, 0, batch_size-1)
+                    pipe.multi()
+                    pipe.ltrim(worker_queries_key, len(data), -1)
+                    pipe.execute()
+                    break
+                except redis.WatchError:
+                    continue
+                finally:
+                    pipe.reset()
+
         data = [json.loads(x) for x in data]
         train_job_ids = [x['train_job_id'] for x in data]
         queries = [x['query'] for x in data]
@@ -138,8 +166,22 @@ class Cache(object):
 
     def pop_feedbacks_of_worker(self, worker_id, batch_size):
         worker_queries_key = '{}_{}'.format(QUERIES_QUEUE, worker_id)
-        feedbacks = self._redis.lrange(worker_queries_key, 0, batch_size - 1)
-        self._redis.ltrim(worker_queries_key, len(feedbacks), -1)
+
+        feedbacks = None
+        with self._redis.pipeline() as pipe:
+            while True:
+                try:
+                    pipe.watch(worker_queries_key)
+                    feedbacks = pipe.lrange(worker_queries_key, 0, batch_size-1)
+                    pipe.multi()
+                    pipe.ltrim(worker_queries_key, len(feedbacks), -1)
+                    pipe.execute()
+                    break
+                except redis.WatchError:
+                    continue
+                finally:
+                    pipe.reset()
+
         feedbacks = [json.loads(x) for x in feedbacks]
         feedback_ids = [x['id'] for x in feedbacks]
         train_job_ids = [x['train_job_id'] for x in feedbacks]

@@ -29,12 +29,18 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 
 try:
     if service_type == ServiceType.REPOSITORY_QUERY:
-        from rafiki.worker import DataRepositoryQueryWorker
+        from rafiki.worker.data_repository_query_worker import DataRepositoryQueryWorker
         worker = DataRepositoryQueryWorker(service_id)
         worker.start()
     elif service_type == ServiceType.REPOSITORY_FEEDBACK:
-        from rafiki.worker import DataRepositoryFeedbackWorker
+        from rafiki.worker.data_repository_feedback_worker import DataRepositoryFeedbackWorker
         worker = DataRepositoryFeedbackWorker(service_id)
+        worker.start()
+    elif service_type == ServiceType.REPOSITORY_RETRAIN:
+        from rafiki.worker.data_repository_retrain_worker import DataRepositoryRetrainWorker
+        train_job_id = os.environ['TRAIN_JOB_ID']
+        query_index = os.environ['QUERY_INDEX']
+        worker = DataRepositoryRetrainWorker(service_id, train_job_id, query_index)
         worker.start()
     else:
         raise Exception('Invalid service type: {}'.format(service_type))

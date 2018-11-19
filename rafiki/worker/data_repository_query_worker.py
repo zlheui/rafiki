@@ -19,6 +19,7 @@ class DataRepositoryQueryWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database()):
         self._cache = cache
         self._db = db
+        self._db.connect()
         self._service_id = service_id
         self._cwd = os.environ['CONCEPT_DRIFT_FOLDER']
 
@@ -36,7 +37,6 @@ class DataRepositoryQueryWorker(object):
             #    logger.info(query_indexes)
             #    logger.info(queries)
             if len(train_job_ids) > 0:
-                self._db.connect()
                 for query_index, train_job_id, queries_in_batch in zip(query_indexes, train_job_ids, queries):
                     train_job = self._db.get_train_job(train_job_id)
                     self._create_query_folder(train_job_id)
@@ -44,7 +44,7 @@ class DataRepositoryQueryWorker(object):
                     if train_job.task == TaskType.IMAGE_CLASSIFICATION:
                         tmp_index = int(query_index)
                         for query in queries_in_batch:
-                            logger.info('query')
+                            logger.info('query' + str(tmp_index))
                             logger.info(query)
                             # update query index in the database
                             self._db.update_query_index(query[0], str(tmp_index))
@@ -73,12 +73,12 @@ class DataRepositoryQueryWorker(object):
                         raise NotImplementedError
                     logger.info('finish storing')
                 self._db.commit()
-                self._db.disconnect()
             time.sleep(DATA_REPOSITORY_SLEEP)
 
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_data_repository_worker(self._service_id, ServiceType.REPOSITORY_QUERY)
+        self._db.disconnect()
 
     def _create_query_folder(self, train_job_id):
         if not os.path.exists(os.path.join(self._cwd, train_job_id)):

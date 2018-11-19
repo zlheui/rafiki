@@ -498,6 +498,10 @@ class Database(object):
         self._session.add(detector)
         return detector
 
+    def get_all_detectors(self):
+        detectors = self._session.query(Detector).all()
+        return detectors
+
     def get_detector_by_name(self, detector_name):
         detector = self._session.query(Detector).filter(Detector.name == detector_name).first()
         return detector
@@ -529,6 +533,27 @@ class Database(object):
     def get_detector_subscriptions_by_train_job_id(self, train_job_id):
         detector_subs = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).all()
         return detector_subs
+
+    ####################################
+    # QueryIndex for Concept Drift
+    ####################################
+
+    def create_query_index(self, id):
+        query_index = QueryIndex(
+            id = id
+        )
+        self._session.add(query_index)
+        return query_index
+
+    def get_query_index(self, id):
+        query_index = self._session.query(QueryIndex).get(id)
+        return query_index
+
+    def update_query_index(self, query_id, query_index):
+        query = self._session.query(QueryIndex).get(query_id)
+        query.query_index = query_index
+        self._session.add(query)
+        return query
 
     ####################################
     # Others

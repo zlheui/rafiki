@@ -4,7 +4,7 @@ import traceback
 
 from rafiki.db import Database
 from rafiki.constants import ServiceStatus
-from rafiki.config import MIN_SERVICE_PORT, MAX_SERVICE_PORT, DRIFT_DETECTOR_WORKER_PRELICAS
+from rafiki.config import MIN_SERVICE_PORT, MAX_SERVICE_PORT, DRIFT_DETECTOR_WORKER_PARTITIONS
 
 from rafiki.container import DockerSwarmContainerManager 
 
@@ -17,7 +17,6 @@ class ServicesManager(object):
         self._service_ids = {}
 
     def create_drift_detection_service(self, service_type):
-        replicas = self._compute_drift_detection_worker_replicas()
 
         environment_vars = {
             'POSTGRES_HOST': os.environ['POSTGRES_HOST'],
@@ -36,25 +35,30 @@ class ServicesManager(object):
             'DATA_REPOSITORY_PORT': os.environ['DATA_REPOSITORY_PORT']
         }
 
-        service = self._create_service(
-            service_type=service_type,
-            docker_image=os.environ['RAFIKI_IMAGE_DRIFT_DETECTOR_WORKER']+':'+os.environ['RAFIKI_VERSION'],
-            replicas=replicas,
-            environment_vars=environment_vars
-        )
+        services = []
+        for i in range(0, DRIFT_DETECTOR_WORKER_PARTITIONS):
+            service = self._create_service(
+                service_type=service_type,
+                docker_image=os.environ['RAFIKI_IMAGE_DRIFT_DETECTOR_WORKER']+':'+os.environ['RAFIKI_VERSION'],
+                replicas=1,
+                environment_vars=environment_vars
+            )
+            if service_type in self._service_ids:
+                self._service_ids[service_type].append(service.id)
+            else:
+                self._service_ids[service_type] = [service.id]
+            services.append(service)
 
-        self._service_ids[service_type] = service.id
-
-        return service
+        return services
 
     def stop_drift_detection_service(self, service_type):
-        service_id = None
+        service_ids = None
         if service_type in self._service_ids:
-            service = self._db.get_service(self._service_ids[service_type])
-            service_id = service.id
-            self._stop_service(service)
-
-        return service_id
+            service_ids = self._service_ids[service_type]
+            for service_id in service_ids:
+                service = self._db.get_service(service_id)
+                self._stop_service(service)
+        return service_ids
 
     def _stop_service(self, service):
         if service.container_service_id is not None:
@@ -147,6 +151,3 @@ class ServicesManager(object):
             port += 1
 
         return port
-
-    def _compute_drift_detection_worker_replicas(self):
-        return DRIFT_DETECTOR_WORKER_PRELICAS

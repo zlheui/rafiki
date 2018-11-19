@@ -8,14 +8,6 @@ from rafiki.db import Database
 from rafiki.container import DockerSwarmContainerManager
 from .services_manager import ServicesManager
 
-import pickle
-import requests
-import zipfile
-from urllib.parse import urlparse
-import random
-
-from rafiki.constants import TaskType, DatasetProtocol
-
 logger = logging.getLogger(__name__)
 
 class DataRepository(object):
@@ -225,10 +217,12 @@ class DataRepository(object):
 
         os.chdir(original_wd)
 
+    def create_retrain_service(self, train_job_id, query_index):
+        service = self._services_manager.create_retrain_service(train_job_id, query_index)
+
         return {
             'created': True,
-            'train_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['train']+'.zip')),
-            'test_dataset_uri': 'http://{}:{}{}'.format('localhost', 8007, os.path.join(self._cwd, train_job_id, dataset_folder, dataset_info['test']+'.zip'))
+            'id': service.id
         }
 
     def create_data_repository_service(self, service_type):
@@ -277,3 +271,5 @@ class DataRepository(object):
         for root, dirs, files in os.walk(path):
             for file in files:
                 ziph.write(os.path.join(root, file))
+        self._db.disconnect()
+

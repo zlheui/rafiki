@@ -19,18 +19,22 @@ class Drift_Detector(object):
         pass
 
     def create_drift_detection_service(self, service_type):
-        service = self._services_manager.create_drift_detection_service(service_type)
+        services = self._services_manager.create_drift_detection_service(service_type)
 
-        return {
-            'id': service.id
-        }
+        output = {}
+        for i in range(0, len(services)):
+            output['id'+str(i)] = services[i].id
+
+        return output
 
     def stop_drift_detection_service(self, service_type):
-        service_id = self._services_manager.stop_drift_detection_service(service_type)
+        service_ids = self._services_manager.stop_drift_detection_service(service_type)
 
-        return {
-            'id': service_id
-        }
+        output = {}
+        for i in range(0, len(service_ids)):
+            output['id'+str(i)] = service_ids[i]
+
+        return output
 
     def subscribe_detector(self, trial_id, detector_name):
         detector_sub = self._db.create_detector_sub(

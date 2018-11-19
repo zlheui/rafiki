@@ -1,6 +1,7 @@
 import time
 import json
 import logging
+import uuid
 
 from rafiki.cache import Cache
 from rafiki.db import Database
@@ -47,7 +48,9 @@ class Predictor(object):
         if train_job.subscribe_to_drift_detection_service:
             running_drift_detection_worker_ids = self._cache.get_drift_detection_workers(ServiceType.DRIFT_QUERY)
             if len(running_drift_detection_worker_ids) > 0:
-                con_drift_query_id = self._cache.add_query_of_drift_detection_worker(running_drift_detection_worker_ids[0], self._train_job_id, query)
+                # need to make sure all drift detector worker is working, cannot add more workers
+                partition = uuid.UUID(self._train_job_id).int%len(running_drift_detection_worker_ids)
+                con_drift_query_id = self._cache.add_query_of_drift_detection_worker(running_drift_detection_worker_ids[partition], self._train_job_id, query)
                 con_drift_query_index = self._db.create_query_index(id=con_drift_query_id)
                 self._db.commit()
         # End of Concept drift code
@@ -84,6 +87,8 @@ class Predictor(object):
 
             time.sleep(PREDICTOR_PREDICT_SLEEP)
 
+        self._db.disconnect()
+        
         logger.info('Predictions:')
         logger.info(worker_to_prediction)
 

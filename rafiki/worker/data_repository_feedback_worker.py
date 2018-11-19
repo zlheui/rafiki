@@ -17,6 +17,7 @@ class DataRepositoryFeedbackWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database()):
         self._cache = cache
         self._db = db
+        self._db.connect()
         self._service_id = service_id
         self._cwd = os.environ['CONCEPT_DRIFT_FOLDER']
 
@@ -32,8 +33,6 @@ class DataRepositoryFeedbackWorker(object):
                 self._cache.pop_feedbacks_of_worker(self._service_id, DATA_REPOSITORY_BATCH_SIZE)
 
             if len(labels) > 0:
-                
-                self._db.connect()
                 for (train_job_id, query_index, label) in zip(train_job_ids, query_indexes, labels):
                     # create feedback folder
                     self._create_feedback_folder(train_job_id)
@@ -73,6 +72,7 @@ class DataRepositoryFeedbackWorker(object):
     def stop(self):
         # Remove from set of running workers
         self._cache.delete_data_repository_worker(self._service_id, ServiceType.REPOSITORY_FEEDBACK)
+        self._db.disconnect()
 
     def _create_feedback_folder(self, train_job_id):
         if not os.path.exists(os.path.join(self._cwd, train_job_id)):

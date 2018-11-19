@@ -10,7 +10,9 @@ from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
 from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
-from rafiki.constants import ServiceType, BudgetType
+from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
+from rafiki.constants import ServiceType
+from rafiki.client import Client
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ class DriftDetectionQueryWorker(object):
     def __init__(self, service_id, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ')):
         self._cache = cache
         self._db = db
+        self._db.connect()
         self._service_id = service_id
         self._detectors = {}
         self._client = None
@@ -46,7 +49,6 @@ class DriftDetectionQueryWorker(object):
 
                 train_job_id_to_detection_methods = {}
                 detection_methods = []
-                self._db.connect()
                 for train_job_id,_ in train_job_id_to_queries.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
                     train_job_id_to_detection_methods[train_job_id] = []
@@ -105,7 +107,8 @@ class DriftDetectionQueryWorker(object):
 
     def stop(self):
         # Remove from set of running workers
-        self._cache.delete_drift_detection_worker(self._service_id, ServiceType.QUERY)
+        self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_QUERY)
+        self._db.disconnect()
 
     def _update_on_queries(self, detector_name, clazz, train_job_id, queries, query_index, logger):
         try:
@@ -136,53 +139,9 @@ class DriftDetectionQueryWorker(object):
                                              detector_inst._param['trend'], detector_inst._param['index']))
                     if self._client is None:
                         self._client = self._make_client()
-
-                    #res = self._client.create_new_dataset(train_job_id, index_of_change)
-                    res = None
-                    if res is not None and bool(res['created']):
-                        # TODO: schedule admin to retrain the trial
-                        # TODO: mark current train job drifted and no other re-training can be scheduled
-                        old_train_job = self._db.get_train_job(train_job_id)
-                        client.create_train_job(
-                            app=old_train_job.app,
-                            task=old_train_job.task,
-                            train_dataset_uri=res['train_dataset_uri'],
-                            test_dataset_uri=['test_dataset_uri'],
-                            budget_type=old_train_job.budget_type,
-                            budget_amount=old_train_job.budget_amount
-                        )
-
-                        #wait until train job completed
-                        while True:
-                            time.sleep(10)
-                            try:
-                                train_job = client.get_train_job(app=train_job.app)
-                                if train_job.get('status') == 'COMPLETED':
-                                    break
-                            except:
-                                pass
-
-                        #subscribe best trials of new train job to detectors
-                        detectors = self._db.get_train_job_detectors(old_train_job.id)
-                        for detector_name in detectors:
-                            client.subscribe_drift_detection_service_train_job(train_job.id)
-
-                        #stop old inference job
-                        client.stop_inference_job(self, app, app_version=-1)
-
-                        #deploy new inference job
-                        client.create_inference_job(app=train_job.app)
-
-                        #wait until inference job deployed
-                        while True:
-                            time.sleep(20)
-                            try:
-                                inference_job = client.get_running_inference_job(app=train_job.app)
-                                if inference_job.get('status') == 'RUNNING':
-                                    return inference_job.get('predictor_host')
-
-                            except:
-                                pass
+                    #res = self._client.create_retrain_service(train_job_id, index_of_change)
+                    if bool(res['created']):
+                        break
 
             except:
                 logger.info(exc_info=True)

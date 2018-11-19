@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 import traceback
+import zipfile
+import io
 
 from rafiki.constants import UserType, ServiceType
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
@@ -58,6 +60,12 @@ def remove_all_folders(auth):
 def hello():
     return jsonify({'hello':'hello'})
 
+@app.route(os.environ['CONCEPT_DRIFT_FOLDER']+'/<train_job_id>/dataset/<zip_file_name>', methods=['GET'])
+def download(train_job_id, zip_file_name):
+    return send_file(
+        os.environ['CONCEPT_DRIFT_FOLDER']+'/'+train_job_id+'/dataset/'+zip_file_name,
+        attachment_filename=zip_file_name)
+
 @app.route('/data_repository/query', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
 def create_data_repository_query_service(auth):
@@ -82,12 +90,12 @@ def stop_data_repository_feedback_service(auth):
     with data_repository:
         return jsonify(data_repository.stop_data_repository_service(ServiceType.REPOSITORY_FEEDBACK))
 
-@app.route('/create_new_dataset/<train_job_id>', methods=['POST'])
+@app.route('/create_retrain_service/<train_job_id>', methods=['POST'])
 @auth([UserType.ADMIN, UserType.MODEL_DEVELOPER])
-def create_new_dataset(auth, train_job_id):
+def create_retrain_service(auth, train_job_id):
     params = get_request_params()
     with data_repository:
-        return jsonify(data_repository.create_new_dataset(train_job_id, **params))
+        return jsonify(data_repository.create_retrain_service(train_job_id=train_job_id, **params))
 
 # Handle uncaught exceptions with a server error & the error's stack trace (for development)
 @app.errorhandler(Exception)

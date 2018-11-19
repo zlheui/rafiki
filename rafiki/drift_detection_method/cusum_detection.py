@@ -80,9 +80,7 @@ class CUSUMDetector(BaseMethod):
                     task = train_job.task
                     uri = train_job.test_dataset_uri
                     model = self._load_model(trial.id)
-                    (X, y) = self._load_dataset_training(uri, task, model)
-                    logger.info(X)
-                    logger.info(y)
+                    (X, y) = self._load_dataset_training(uri, task, model, logger)
                     
                     #baseline feedback stats 
                     self._param['label']['mean'] = [0] * self._param['nclass']
@@ -187,9 +185,11 @@ class CUSUMDetector(BaseMethod):
     def load_parameters(self, param_str):
         self._param = json.loads(param_str)
 
-    def _load_dataset_training(self, uri, task, model = None):
+    def _load_dataset_training(self, uri, task, model = None, logger = None):
         # Here, we use drift detection model's in-built dataset loader
         (X, y, yp) = load_dataset_training(uri, task, model)
+        logger.info(y)
+        logger.info(yp)
         X = self._prepare_X(X)
         if self._param['status'] == 'uninitialized':
             self._param['ncol'] = len(X[0])

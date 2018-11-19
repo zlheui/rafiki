@@ -75,7 +75,7 @@ class DriftDetectionFeedbackWorker(object):
                 procs = []
                 for train_job_id,feedbacks in train_job_id_to_feedbacks.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
-                        proc = Process(target=self._update_on_feedbacks, args=(self._detectors[detector_method], \
+                        proc = Process(target=self._update_on_feedbacks, args=(detector_method, self._detectors[detector_method], \
                                   train_job_id, train_job_id_to_trial_ids[train_job_id], feedbacks, logger))
                         procs.append(proc)
                         proc.start()
@@ -91,7 +91,7 @@ class DriftDetectionFeedbackWorker(object):
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
         self._db.disconnect()
 
-    def _update_on_feedbacks(self, clazz, train_job_id, trial_ids, feedbacks, logger):
+    def _update_on_feedbacks(self, detector_name, clazz, train_job_id, trial_ids, feedbacks, logger):
         logger.info('detect real concept drift')
         #try 5 times only and exit if still fail
         for i in range(5):

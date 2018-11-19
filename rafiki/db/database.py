@@ -423,6 +423,7 @@ class Database(object):
             return d.param
         else:
             return None
+
     def get_train_job_detectors(self, train_job_id):
         subs = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).all()
         return [sub.detector_name for sub in subs]

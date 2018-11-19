@@ -52,7 +52,7 @@ class DriftDetectionFeedbackWorker(object):
                 
                 for train_job_id,_ in train_job_id_to_feedbacks.items():
                     trials = self._db.get_trials_of_train_job(train_job_id)
-                    train_job_id_to_trial_ids[train_job_id] = trials
+                    train_job_id_to_trial_ids[train_job_id] = [trial.id for trial in trials]
                     train_job_id_to_detection_methods[train_job_id] = []
                     for trial in trials:
                         detector_subs = self._db.get_detector_subscriptions_by_trial_id(trial.id)

@@ -76,7 +76,7 @@ class DriftDetectionFeedbackWorker(object):
                 for train_job_id,feedbacks in train_job_id_to_feedbacks.items():
                     for detector_method in train_job_id_to_detection_methods[train_job_id]:
                         proc = Process(target=self._update_on_feedbacks, args=(self._detectors[detector_method], \
-                                  train_job_id, train_job_id_to_trial_ids[train_job_id], feedbacks))
+                                  train_job_id, train_job_id_to_trial_ids[train_job_id], feedbacks, logger))
                         procs.append(proc)
                         proc.start()
                 for proc in procs:
@@ -91,14 +91,15 @@ class DriftDetectionFeedbackWorker(object):
         self._cache.delete_drift_detection_worker(self._service_id, ServiceType.DRIFT_FEEDBACK)
         self._db.disconnect()
 
-    def _update_on_feedbacks(self, clazz, train_job_id, trial_ids, feedbacks, querie):
+    def _update_on_feedbacks(self, clazz, train_job_id, trial_ids, feedbacks, logger):
         logger.info('detect real concept drift')
-        while True:
+        #try 5 times only and exit if still fail
+        for i in range(5):
             try:
                 for trial_id in trial_ids:
                     detector_inst = clazz()
-                    detector_inst.init()
-                    detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks)
+                    detector_inst.init(ServiceType.DRIFT_FEEDBACK, detector_name, trial_id, logger=logger)
+                    detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks, logger)
                     
                     if detection_result and query_index is not None and detection_result == True:
                         if self._client is None:
@@ -106,7 +107,8 @@ class DriftDetectionFeedbackWorker(object):
                         #res = self._client.create_retrain_service(train_job_id, query_index)
                         if bool(res['created']):
                             break
-            except:
+            except Exception as e:
+                logger.error(e, exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)
                 continue
             else:

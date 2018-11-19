@@ -66,10 +66,11 @@ class CUSUMDetector(BaseMethod):
 
                     #trained model ready for detection
                     self._param['status'] = 'ready'
-            else:
+            elif service_type == ServiceType.DRIFT_FEEDBACK:
             #update label status
-                param = self._db.get_trial_detector_param(job_id, detector_name)
-                if param is not None:
+                param_str = self._db.get_trial_detector_param(job_id, detector_name)
+                logger.info('db param: {}'.format(param_str))
+                if param_str is not None:
                     #load exisitng parma in dabase
                     self._load_parameters(param)
                 else:
@@ -80,6 +81,8 @@ class CUSUMDetector(BaseMethod):
                     uri = train_job.test_dataset_uri
                     model = self._load_model(trial.id)
                     (X, y) = self._load_dataset_training(uri, task, model)
+                    logger.info(X)
+                    logger.info(y)
                     
                     #baseline feedback stats 
                     self._param['label']['mean'] = [0] * self._param['nclass']
@@ -94,6 +97,9 @@ class CUSUMDetector(BaseMethod):
 
                     #trained model ready for detection
                     self._param['status'] = 'ready'
+                    logger.info(self._param)
+            else:
+                logger.info('unsupported service type: {}'.format(service_type))
         self._db.disconnect()
     
     def update_on_queries(self, train_job_id, queries, query_index, logger):
@@ -128,10 +134,14 @@ class CUSUMDetector(BaseMethod):
                 
         return False, None
     
-    def update_on_feedbacks(self, trial_job_id, feedbacks):
+    def update_on_feedbacks(self, trial_job_id, feedbacks, logger=None):
         if self._param['status'] != 'ready':
             logger.info('model status has to be ready but is {0}'.format(self._param['status']))
-            return False, None
+            if self._param['status'] == 'drifted':
+                return True, self._param['query_index']
+            else:
+                return False, None
+
         y = self._load_prediction_from_feedbacks(self._param['nclass'], trial_job_id, feedbacks)
         
         shigh = self._param['label']['shigh']

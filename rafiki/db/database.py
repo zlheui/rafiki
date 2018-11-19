@@ -418,7 +418,7 @@ class Database(object):
             return None
 
     def get_trial_detector_param(self, trial_id, detector_name):
-        d = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id and DriftDetectionTSub.detector_name == detector_name).first()
+        d = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id).filter(DriftDetectionSub.detector_name == detector_name).first()
         if d is not None:
             return d.param
         else:

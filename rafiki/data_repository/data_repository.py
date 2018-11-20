@@ -51,7 +51,6 @@ class DataRepository(object):
         }
 
     def create_new_dataset(self, train_job_id, query_index):
-        #TODO: filter away data before query_index
         dataset_folder = 'dataset'
         feedback_folder = 'feedback'
 
@@ -144,10 +143,11 @@ class DataRepository(object):
             if os.path.isdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
                 if folder in dataset_info[train_folder] and folder in dataset_info[test_folder]:
                     for file in os.listdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
-                        if folder in feedback_info:
-                            feedback_info[folder].append(file)
-                        else:
-                            feedback_info[folder] = [file]
+                        if int(file.split('.')[0].split('_')[1] >= query_index:
+                            if folder in feedback_info:
+                                feedback_info[folder].append(file)
+                            else:
+                                feedback_info[folder] = [file]
 
         for folder, files in feedback_info.items():
             files.sort(key=lambda x: int(x.split('.')[0].split('_')[1]), reverse=True)

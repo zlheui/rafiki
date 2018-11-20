@@ -8,7 +8,7 @@ from multiprocessing import Process
 from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
-from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE
+from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE, WAIT_FOR_FEEDBACK_SLEEP
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.constants import ServiceType
 from rafiki.client import Client
@@ -113,16 +113,23 @@ class DriftDetectionFeedbackWorker(object):
                         trial = self._db.get_trial(trial_id)
                         train_job_id = trial.train_job_id
                         train_job = self._db.get_train_job(train_job_id)
+
                         if train_job.retrain_scheduled == 'True':
-                            logger.info('retraining in process already for train job id: {}'.format(train_job_id))
+                            logger.info('retraining already scheduled for train job id: {}'.format(train_job_id))
                             break
-                        else:
-                            if self._client is None:
-                                self._client = self._make_client()
-                            res = self._client.create_retrain_service(train_job_id, index_of_change)
-                            if bool(res['created']):
-                                self._db.mark_train_job_retrain_scheduled(train_job)
-                                break
+                        self._db.mark_train_job_retrain_scheduled(train_job)
+
+                        #wait until have enough feedback to start a retraining
+                        while True:
+                            if self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change) < 50):
+                                time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
+                            else:
+                                if self._client is None:
+                                    self._client = self._make_client()
+                                res = self._client.create_retrain_service(train_job_id, index_of_change)
+                                logger.info('retrain status: {}'.format(res))
+                                if bool(res['created']):
+                                    break
             except Exception as e:
                 logger.error(e, exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)

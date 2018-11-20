@@ -110,6 +110,7 @@ class Database(object):
         train_job.retrain_scheduled = 'True'
         train_job.datetime_retrain_schedule = datetime.datetime.utcnow()
         self._session.add(train_job)
+        self._session.commit()
         return train_job
 
     def mark_train_job_as_complete(self, train_job):
@@ -485,9 +486,10 @@ class Database(object):
     # Feedback for Concept drift
     ####################################
 
-    def create_feedback(self, query_index, label):
+    def create_feedback(self, train_job_id, query_index, label):
         feedback = Feedback(
             query_index = query_index,
+            train_job_id = train_job_id,
             label = label
         )
         self._session.add(feedback)
@@ -513,6 +515,13 @@ class Database(object):
         query.query_index = query_index
         self._session.add(query)
         return query
+
+    def get_number_feedback_after_index_by_train_job(self, train_job_id, query_index):
+        query = self._session.query(Feedback).filter(Feedback.train_job_id == train_job_id and Feedback.query_index >= query_index).all()
+        if query is not None:
+            return len(query)
+        else:
+            return 0
 
     ####################################
     # Detector for Concept drift

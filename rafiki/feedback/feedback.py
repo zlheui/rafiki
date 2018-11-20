@@ -26,7 +26,7 @@ class Feedback(object):
 
         if label is not None:
             self._db.connect()
-            feedback = self._db.create_feedback(query_index=int(query_index), label=label)
+            feedback = self._db.create_feedback(train_job_id, query_index=int(query_index), label=label)
             self._db.commit()
             
             label_is_none = False

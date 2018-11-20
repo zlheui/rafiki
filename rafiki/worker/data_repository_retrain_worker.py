@@ -14,6 +14,7 @@ import zipfile
 from urllib.parse import urlparse
 import random
 import shutil
+import numpy as np
 
 from rafiki.constants import TaskType, DatasetProtocol
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD

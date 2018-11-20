@@ -33,7 +33,7 @@ class CUSUMDetector(BaseMethod):
             'query_index': None
         }
 
-    def init(self, service_type=None, detector_name=None, job_id=None, model = None, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ'), logger=None):
+    def init(self, service_type=None, detector_name=None, job_id=None, model = None, cache=Cache(), db=Database(isolation_level='REPEATABLE_READ'), logger = None):
         self._cache = cache
         self._db = db
         self._detector_name = detector_name
@@ -47,7 +47,6 @@ class CUSUMDetector(BaseMethod):
             if service_type == ServiceType.DRIFT_QUERY:
             #update feature status
                 param_str = self._db.get_train_job_detector_param(job_id, detector_name)
-                logger.info('db param: {}'.format(param_str))
                 if param_str is not None:
                     #load exisitng parma in dabase
                     self.load_parameters(param_str)
@@ -72,7 +71,6 @@ class CUSUMDetector(BaseMethod):
             elif service_type == ServiceType.DRIFT_FEEDBACK:
             #update label status
                 param_str = self._db.get_trial_detector_param(job_id, detector_name)
-                logger.info('db param: {}'.format(param_str))
                 if param_str is not None:
                     #load exisitng parma in dabase
                     self.load_parameters(param_str)

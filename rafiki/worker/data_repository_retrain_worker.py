@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 import random
 import shutil
 import numpy as np
+import json
 
 from rafiki.constants import TaskType, DatasetProtocol
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
@@ -70,15 +71,11 @@ class DataRepositoryRetrainWorker(object):
         logger.info('Finish creating new train job')
 
         logger.info('Subscribe new train job best trials')
-        trials = self._db.get_best_trials_of_train_job(train_job['id'])
-        detectors = self._db.get_all_detectors()
-        for trial in trials:
-            for detector in detectors:
-                self._client.subscribe_drift_detection_service(trial.id, detector.name)
-        self._db.commit()
+        detectors = self._db.get_train_job_detectors(old_train_job.id)
+        for detector_name in detectors:
+            self._client.subscribe_drift_detection_service_train_job(train_job.get('id'), detector_name)
 
         logger.info('Finish subscribing best trials')
-
 
         #stop old inference job
         self._client.stop_inference_job(app=old_train_job.app, app_version=old_train_job.app_version)
@@ -187,16 +184,20 @@ class DataRepositoryRetrainWorker(object):
                     all_content = []
                     for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
                         #merge files first
-                        content = np.genfromtxt(file, delimiter=',')
-                        all_content = all_content + [content]
-                        os.remove(file)
+                        file_path = os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, file)
+                        with open(file_path) as f:
+                            fcontent = f.readlines()
+                        all_content = all_content + [content.rstrip().split(',') for content in fcontent]
+                        os.remove(file_path)
                     #save data file
-                    numpy.savetxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, DATA_FILE_NAME),\
-                                  all_content, delimiter=",")
+                    outfile = os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, DATA_FILE_NAME)
+                    with open(outfile, 'w') as f:
+                        f.writelines(','.join(str(j) for j in i) + '\n' for i in all_content)
+                        f.close()
                     
                     #record entry row index
-                    for index in range(len(allContent)):
-                        folder1 = allContent[index][-1]
+                    for index in range(len(all_content)):
+                        folder1 = all_content[index][-1]
                         if folder1 in dataset_info[folder]:
                             dataset_info[folder][folder1].append(index)
                         else:
@@ -254,6 +255,7 @@ class DataRepositoryRetrainWorker(object):
         # create new dataset
         for data_folder in data_folders:
             if self._is_image_classification(task):
+                # TODO: extract image vectors from feedback files and store as image files
                 for folder, content in assign_files[data_folder].items():
                     replace_size = len(content)
                     original_size = len(dataset_info[data_folder][folder])
@@ -270,28 +272,33 @@ class DataRepositoryRetrainWorker(object):
                     dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
             elif self._is_feature_vector_classification(task):
                 #load content from the only data file
-                all_content = np.genfromtxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, \
-                                                         data_folder, DATA_FILE_NAME), delimiter=',')
+                file_path = os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, DATA_FILE_NAME)
+                with open(file_path) as f:
+                    fcontent = f.readlines()
+                all_content = [content.rstrip().split(',') for content in fcontent]
+                        
                 for folder, content in assign_files[data_folder].items():
                     replace_size = len(content)
                     original_size = len(dataset_info[data_folder][folder])
                     if replace_size > original_size:
                         replace_size = original_size
 
-                    for i in range(original_size-replace_size, original_size):
-                        os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, \
-                                               data_folder, folder, dataset_info[data_folder][folder][i]))
+                    #replace data with feedback data
                     for i in range(0, replace_size):
-                        content = np.genfromtxt(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder, content[i]), \
-                                                delimiter=',')
-                        #replace data in ith row with feedback data
-                        all_content[dataset_info[data_folder][folder][i]] = content[1][0]
+                        with open(os.path.join(self._cwd, self._train_job_id, \
+                                 self._feedback_folder, folder, content[i])) as f:
+                            fcontent = f.readlines()
+                        f_data = json.loads(fcontent[0][fcontent[0].find(',') + 1 : ])[0] + [folder]
+                        all_content[dataset_info[data_folder][folder][i]] = f_data
                     #rotate the indexing
-                    dataset_info[data_folder][folder] = dataset_info[data_folder][folder][replace_size:] + \
+                    if replace_size < original_size:
+                        dataset_info[data_folder][folder] = dataset_info[data_folder][folder][replace_size:] + \
                                                         dataset_info[data_folder][folder][:replace_size]
                 #save data file
-                numpy.savetxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, DATA_FILE_NAME),\
-                                  all_content, delimiter=",")
+                outfile = os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, DATA_FILE_NAME)
+                with open(outfile, 'w') as f:
+                    f.writelines(','.join(str(j) for j in i) + '\n' for i in all_content)
+                    f.close()
                     
 
         # store dataset_info

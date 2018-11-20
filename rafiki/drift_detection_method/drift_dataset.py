@@ -47,15 +47,16 @@ def load_dataset_training(uri, task, model = None):
                 labels = []
                 with zipfile.ZipFile(io.BytesIO(r.content)) as dataset:
                     for entry in dataset.namelist():
-                        encoded = io.BytesIO(dataset.read(entry))
-                        if '\r\n' in encoded.getvalue().decode('utf-8'):
-                            delimiter = '\r\n'
-                        else:
-                            delimiter = '\n'
-                        data_decoded = encoded.getvalue().decode('utf-8').split(delimiter)
-                        data_split = [row.split(",") for row in data_decoded if row != '']
-                        labels.extend(np.array([row[-1] for row in data_split]))
-                        features.extend(np.array([row[:-1] for row in data_split]).astype(np.float))
+                        if entry.endswith('.csv') or entry.endswith('.data'):
+                            encoded = io.BytesIO(dataset.read(entry))
+                            if '\r\n' in encoded.getvalue().decode('utf-8'):
+                                delimiter = '\r\n'
+                            else:
+                                delimiter = '\n'
+                            data_decoded = encoded.getvalue().decode('utf-8').split(delimiter)
+                            data_split = [row.split(",") for row in data_decoded if row != '']
+                            labels.extend(np.array([row[-1] for row in data_split]))
+                            features.extend(np.array([row[:-1] for row in data_split]).astype(np.float))
                 features = np.array(features)
                 if model is None:
                     return (features, None, None)

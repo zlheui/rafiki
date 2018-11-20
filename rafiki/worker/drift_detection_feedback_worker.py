@@ -103,11 +103,11 @@ class DriftDetectionFeedbackWorker(object):
                         continue
                     detector_inst = clazz()
                     detector_inst.init(ServiceType.DRIFT_FEEDBACK, detector_name, trial_id, logger=logger)
-                    detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks, logger)
+                    detection_result, index_of_change = detector_inst.update_on_feedbacks(trial_id, feedbacks, logger)
                     param_str = detector_inst.dump_parameters(logger)
                     self._db.update_trial_detector_param(trial_id, detector_name, param_str)
 
-                    if detection_result and query_index is not None and detection_result == True:
+                    if detection_result and index_of_change is not None and detection_result == True:
                         logger.info('Drift is detected at query index {} with {} trend for {}th class'.format(index_of_change, \
                                              detector_inst._param['trend'], detector_inst._param['index']))
                         trial = self._db.get_trial(trial_id)
@@ -119,7 +119,7 @@ class DriftDetectionFeedbackWorker(object):
                         else:
                             if self._client is None:
                                 self._client = self._make_client()
-                            res = self._client.create_retrain_service(train_job_id, query_index)
+                            res = self._client.create_retrain_service(train_job_id, index_of_change)
                             if bool(res['created']):
                                 self._db.mark_train_job_retrain_scheduled(train_job)
                                 break

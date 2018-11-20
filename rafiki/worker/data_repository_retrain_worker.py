@@ -184,7 +184,7 @@ class DataRepositoryRetrainWorker(object):
                 for folder in data_folders:
                     #merge files first
                     all_content = []
-                    for file in oslistdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
+                    for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
                         #merge files first
                         content = np.genfromtxt(file, delimiter=',')
                         all_content = all_content + [content]

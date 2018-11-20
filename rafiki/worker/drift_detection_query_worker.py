@@ -134,7 +134,7 @@ class DriftDetectionQueryWorker(object):
                 except Exception as e:
                     logger.error(e, exc_info=True)
 
-                if detection_result and index_of_change is not None:
+                if detection_result and index_of_change is not None and detection_result == True:
                     #drift detected
                     logger.info('Drift is detected at query index {} with {} trend for {}th feature'.format(index_of_change, \
                                              detector_inst._param['trend'], detector_inst._param['index']))

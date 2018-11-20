@@ -1,6 +1,7 @@
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import and_, or_, not_
 import os
 
 from rafiki.constants import TrainJobStatus, \
@@ -430,7 +431,7 @@ class Database(object):
 
     def get_prediction_by_index_and_trial(self, index, trial_id):
         id = self.get_prediction_id_by_index(index)
-        prediction = self._session.query(Prediction).filter(Prediction.id == id and Prediction.trial_id == trial_id).first()
+        prediction = self._session.query(Prediction).filter(and_(Prediction.id == id, Prediction.trial_id == trial_id)).first()
         if prediction is not None:
             return prediction.predict
         else:
@@ -459,7 +460,7 @@ class Database(object):
         return [sub.detector_name for sub in subs]    
 
     def update_train_job_detector_param(self, train_job_id, detector_name, param):
-        detector = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id and DriftDetectionTrainJobSub.detector_name == detector_name).first()
+        detector = self._session.query(DriftDetectionTrainJobSub).filter(and_(DriftDetectionTrainJobSub.train_job_id == train_job_id, DriftDetectionTrainJobSub.detector_name == detector_name)).first()
         if detector is not None:
             detector.param = param
             self._session.add(detector)
@@ -469,7 +470,7 @@ class Database(object):
             return None
 
     def update_trial_detector_param(self, trial_id, detector_name, param):
-        detector = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id and DriftDetectionSub.detector_name == detector_name).first()
+        detector = self._session.query(DriftDetectionSub).filter(and_(DriftDetectionSub.trial_id == trial_id, DriftDetectionSub.detector_name == detector_name)).first()
         if detector is not None:
             detector.param = param
             self._session.add(detector)
@@ -479,7 +480,7 @@ class Database(object):
             return None
 
     def trial_subscribed_to_detector(self, trial_id, detector_name):
-        detector = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id and DriftDetectionSub.detector_name == detector_name).first()
+        detector = self._session.query(DriftDetectionSub).filter(and_(DriftDetectionSub.trial_id == trial_id, DriftDetectionSub.detector_name == detector_name)).first()
         return detector is not None
 
     ####################################
@@ -517,7 +518,7 @@ class Database(object):
         return query
 
     def get_number_feedback_after_index_by_train_job(self, train_job_id, query_index):
-        query = self._session.query(Feedback).filter(Feedback.train_job_id == train_job_id and Feedback.query_index >= query_index).all()
+        query = self._session.query(Feedback).filter(and_(Feedback.train_job_id == train_job_id, Feedback.query_index >= query_index)).all()
         if query is not None:
             return len(query)
         else:

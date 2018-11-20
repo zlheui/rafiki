@@ -9,7 +9,7 @@ from multiprocessing import Queue
 from rafiki.utils.drift_detection_method import load_detector_class
 from rafiki.db import Database
 from rafiki.cache import Cache
-from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE, WAIT_FOR_FEEDBACK_SLEEP
+from rafiki.config import DRIFT_WORKER_SLEEP, DRIFT_DETECTION_BATCH_SIZE, WAIT_FOR_FEEDBACK_SLEEP, MIN_FEEDBACK_COUNT
 from rafiki.config import SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
 from rafiki.constants import ServiceType
 from rafiki.client import Client
@@ -144,7 +144,9 @@ class DriftDetectionQueryWorker(object):
                         break
                     self._db.mark_train_job_retrain_scheduled(train_job)
                     while True:
-                        if self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change) < 50):
+                        self._db.commit()
+                        feedback_count = self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change)
+                        if feedback_count < MIN_FEEDBACK_COUNT:
                             time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
                         else:
                             if self._client is None:

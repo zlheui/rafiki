@@ -143,7 +143,7 @@ class DataRepository(object):
             if os.path.isdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
                 if folder in dataset_info[train_folder] and folder in dataset_info[test_folder]:
                     for file in os.listdir(os.path.join(self._cwd, train_job_id, feedback_folder, folder)):
-                        if int(file.split('.')[0].split('_')[1] >= query_index:
+                        if int(file.split('.')[0].split('_')[1]) >= query_index:
                             if folder in feedback_info:
                                 feedback_info[folder].append(file)
                             else:

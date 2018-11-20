@@ -122,7 +122,8 @@ class DriftDetectionQueryWorker(object):
         except Exception as e:
             logger.error(e, exc_info=True)
 
-        while True:
+        #try 5 times only and exit if still fail
+        for i in range(5):
             try:
                 try:
                     detection_result, index_of_change = detector_inst.update_on_queries(train_job_id, queries, query_index, logger)
@@ -137,11 +138,18 @@ class DriftDetectionQueryWorker(object):
                     #drift detected
                     logger.info('Drift is detected at query index {} with {} trend for {}th feature'.format(index_of_change, \
                                              detector_inst._param['trend'], detector_inst._param['index']))
-                    if self._client is None:
-                        self._client = self._make_client()
-                    #res = self._client.create_retrain_service(train_job_id, index_of_change)
-                    if bool(res['created']):
+                    train_job = self._db.get_train_job(train_job_id)
+                    if train_job.retrain_scheduled == 'True':
+                        logger.info('retraining in process already for train job id: {}'.format(train_job_id))
                         break
+                    else:
+                        logger.info('Schedule new retraining for train job id: {}'.format(train_job_id))
+                        if self._client is None:
+                            self._client = self._make_client()
+                        res = self._client.create_retrain_service(train_job_id, index_of_change)
+                        if bool(res['created']):
+                            self._db.mark_train_job_retrain_scheduled(train_job)
+                            break
 
             except:
                 logger.info(exc_info=True)

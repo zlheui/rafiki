@@ -22,6 +22,7 @@ class DriftDetectionFeedbackWorker(object):
         self._db.connect()
         self._service_id = service_id
         self._detectors = {}
+        self._client = None
 
     def start(self):
         logger.info('Starting drift detection worker for service of id {}...' \
@@ -97,16 +98,31 @@ class DriftDetectionFeedbackWorker(object):
         for i in range(5):
             try:
                 for trial_id in trial_ids:
+                    if not self._db.trial_subscribed_to_detector(trial_id, detector_name):
+                        logger.info('{} is not subscribed to {} detector, skipping drift detection'.format(trial_id, detector_name))
+                        continue
                     detector_inst = clazz()
                     detector_inst.init(ServiceType.DRIFT_FEEDBACK, detector_name, trial_id, logger=logger)
                     detection_result, query_index = detector_inst.update_on_feedbacks(trial_id, feedbacks, logger)
-                    
+                    param_str = detector_inst.dump_parameters(logger)
+                    self._db.update_trial_detector_param(trial_id, detector_name, param_str)
+
                     if detection_result and query_index is not None and detection_result == True:
-                        if self._client is None:
-                            self._client = self._make_client()
-                        #res = self._client.create_retrain_service(train_job_id, query_index)
-                        if bool(res['created']):
+                        logger.info('Drift is detected at query index {} with {} trend for {}th class'.format(index_of_change, \
+                                             detector_inst._param['trend'], detector_inst._param['index']))
+                        trial = self._db.get_trial(trial_id)
+                        train_job_id = trial.train_job_id
+                        train_job = self._db.get_train_job(train_job_id)
+                        if train_job.retrain_scheduled == 'True':
+                            logger.info('retraining in process already for train job id: {}'.format(train_job_id))
                             break
+                        else:
+                            if self._client is None:
+                                self._client = self._make_client()
+                            res = self._client.create_retrain_service(train_job_id, query_index)
+                            if bool(res['created']):
+                                self._db.mark_train_job_retrain_scheduled(train_job)
+                                break
             except Exception as e:
                 logger.error(e, exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)

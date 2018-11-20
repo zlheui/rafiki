@@ -22,6 +22,7 @@ class CUSUMDetector(BaseMethod):
             'status': 'uninitialized',    #ready, detected
             'h': 6,                       #control limit
             'k': 1,                       #penalty
+            'step_size': 10,                      #step size
             'ncol': 1,                    #number of columns
             'nclass': 2,                  #number of classes, from 0 to nclass-1
             'feature': {},                #'mean', 'stdev', 'shigh', 'slow'
@@ -63,6 +64,8 @@ class CUSUMDetector(BaseMethod):
                     #stats
                     self._param['feature']['shigh'] = [0] * self._param['ncol']
                     self._param['feature']['slow'] = [0] * self._param['ncol']
+                    self._param['feature']['chigh'] = [0] * self._param['ncol']
+                    self._param['feature']['clow'] = [0] * self._param['ncol']
 
                     #trained model ready for detection
                     self._param['status'] = 'ready'
@@ -72,30 +75,28 @@ class CUSUMDetector(BaseMethod):
                 logger.info('db param: {}'.format(param_str))
                 if param_str is not None:
                     #load exisitng parma in dabase
-                    self._load_parameters(param)
+                    self.load_parameters(param_str)
                 else:
                     #training the model using testing data set in training job, and the prediciton results
                     trial = self._db.get_trial(job_id)
                     train_job = self._db.get_train_job(trial.train_job_id)
                     task = train_job.task
                     uri = train_job.test_dataset_uri
-                    model = self._load_model(trial.id)
+                    model = self._load_model(job_id)
                     (X, y) = self._load_dataset_training(uri, task, model, logger)
                     
-                    #baseline feedback stats 
-                    self._param['label']['mean'] = [0] * self._param['nclass']
-                    self._param['label']['stdev'] = [0] * self._param['nclass']
-                    for i in range(self._param['nclass']):
-                        self._param['label']['mean'][i] = np.mean(y[i]).tolist()
-                        self._param['label']['stdev'][i] = np.std(y[i]).tolist()
+                    #baseline feedback stats
+                    self._param['label']['mean'] = [np.mean(y[i]) for i in range(self._param['nclass'])]
+                    self._param['label']['stdev'] = [np.std(y[i]) for i in range(self._param['nclass'])]
 
                     #stats
                     self._param['label']['shigh'] = [0] * self._param['nclass']
                     self._param['label']['slow'] = [0] * self._param['nclass']
+                    self._param['label']['chigh'] = [0] * self._param['nclass']
+                    self._param['label']['clow'] = [0] * self._param['nclass']
 
                     #trained model ready for detection
                     self._param['status'] = 'ready'
-                    logger.info(self._param)
             else:
                 logger.info('unsupported service type: {}'.format(service_type))
         self._db.disconnect()
@@ -110,8 +111,11 @@ class CUSUMDetector(BaseMethod):
         X=[row[1][0] for row in queries]
         shigh = self._param['feature']['shigh']
         slow = self._param['feature']['slow']
+        chigh = self._param['feature']['chigh']
+        clow = self._param['feature']['clow']
         mean = self._param['feature']['mean']
         stdev = self._param['feature']['stdev']
+        step_size = self._param['step_size']
 
         for i in range(self._param['ncol']):
             h = self._param['h'] * stdev[i]
@@ -119,7 +123,17 @@ class CUSUMDetector(BaseMethod):
             for j in range(len(X)):
                 shigh[i] = max(0, shigh[i] + X[j][i] - mean[i] - k)
                 slow[i] = max(0, slow[i] + mean[i] - X[j][i] - k)
-                if shigh[i] > h or slow[i] > h:
+                if shigh[i] > 0:
+                    chigh[i] += 1
+                else:
+                    chigh[i] = 0
+                if slow[i] > 0:
+                    clow[i] += 1
+                else:
+                    clow[i] = 0
+
+                if (chigh[i] >= step_size and shigh[i] > h) \
+                     or (clow[i] >= step_size and slow[i] > h):
                     self._param['status'] = 'drifted'
                     if shigh[i] > h:
                         self._param['trend'] = 'up'
@@ -128,11 +142,11 @@ class CUSUMDetector(BaseMethod):
                     self._param['type'] = 'feature'
                     self._param['index'] = i
                     self._param['query_index'] = query_index + j
-                    return True, query_index + j
-                
+                    return True, self._param['query_index']
+        
         return False, None
     
-    def update_on_feedbacks(self, trial_job_id, feedbacks, logger=None):
+    def update_on_feedbacks(self, trial_id, feedbacks, logger=None):
         if self._param['status'] != 'ready':
             logger.info('model status has to be ready but is {0}'.format(self._param['status']))
             if self._param['status'] == 'drifted':
@@ -140,28 +154,41 @@ class CUSUMDetector(BaseMethod):
             else:
                 return False, None
 
-        y = self._load_prediction_from_feedbacks(self._param['nclass'], trial_job_id, feedbacks)
-        
+        y = self._load_prediction_from_feedbacks(self._param['nclass'], trial_id, feedbacks)
         shigh = self._param['label']['shigh']
         slow = self._param['label']['slow']
+        chigh = self._param['label']['chigh']
+        clow = self._param['label']['clow']
         mean = self._param['label']['mean']
         stdev = self._param['label']['stdev']
+        step_size = self._param['step_size']
         
         for i in range(self._param['nclass']):
             h = self._param['h'] * stdev[i]
             k = self._param['k'] * stdev[i]
-            for j in range(len(y[i][1][1])):
-                shigh[i] = max(0, shigh[i] + y[i][j] - mean[i] - k)
-                slow[i] = max(0, slow[i] + mean[i] - y[i][j] - k)
-                if shigh[i] > h or slow[i] > h:
+            for j in range(len(y[i])):
+                shigh[i] = max(0, shigh[i] + y[i][j][1] - mean[i] - k)
+                slow[i] = max(0, slow[i] + mean[i] - y[i][j][1] - k)
+                if shigh[i] > 0:
+                    chigh[i] += 1
+                else:
+                    chigh[i] = 0
+                if slow[i] > 0:
+                    clow[i] += 1
+                else:
+                    clow[i] = 0
+              
+                #only detect down trend for accuracy at the moment
+                if clow[i] >= step_size and slow[i] > h:
                     self._param['status'] = 'drifted'
-                    if shigh[i] > h:
-                        self._param['trend'] = 'up'
-                    else:
+                    if slow[i] > h:
                         self._param['trend'] = 'down'
+                    else:
+                        self._param['trend'] = 'up'
                     self._param['type'] = 'label'
                     self._param['index'] = i
-                    return 
+                    self._param['query_index'] = y[i][j][0]
+                    return True, self._param['query_index']
         
         return False, None
 
@@ -188,12 +215,13 @@ class CUSUMDetector(BaseMethod):
 
     def _load_dataset_training(self, uri, task, model = None, logger = None):
         # Here, we use drift detection model's in-built dataset loader
-        (X, y, yp) = load_dataset_training(uri, task, model, logger)
+        (X, y, yp) = load_dataset_training(uri, task, model)
         X = self._prepare_X(X)
         if self._param['status'] == 'uninitialized':
             self._param['ncol'] = len(X[0])
             self._param['nclass'] = len(np.unique(y))
-        if yp is not None:
+
+        if (y is not None) and (yp is not None):
             y = self._prepare_y(y, yp)
         else:
             y = None
@@ -206,24 +234,28 @@ class CUSUMDetector(BaseMethod):
         result = [np.zeros(0) for i in range(self._param['nclass'])]
         for i in range(len(y)):
             if (y[i] == yp[i]):
-                result[y[i]] = np.append(result[y[i]], 1)
+                result[y[i]] = np.append(result[y[i]], 1.0)
             else:
-                result[y[i]] = np.append(result[y[i]], 0)
+                result[y[i]] = np.append(result[y[i]], 0.0)
         return np.array(result)
     
-    def _load_prediction_from_feedbacks(nclass, trial_job_id, feedbacks):
+    def _load_prediction_from_feedbacks(self, nclass, trial_id, feedbacks):
         #returns a list of list
         #1st dimension is class number
         #2nd dimension is each feedback with that class number as true label
         #each element is a tuple (query_index, prediction) sorted by query_index
+        self._db.connect()
+        trial_mapping = self._db.get_trial_label_mapping(trial_id)
+        inv_mapping = {v: int(k) for (k, v) in trial_mapping.items()}
         y = []
         for i in range(nclass):
             y.append([])
-        for f in feedback:
-            if self._db.get_prediction(f[0]) == f[1]:
-                y[f[1]].append((f[0], 1.0))
+        for f in feedbacks:
+            if self._db.get_prediction_by_index_and_trial(f[0], trial_id) == f[1]:
+                y[inv_mapping[f[1]]].append((f[0], 1.0))
             else:
-                y[f[1]].append((f[0], 0.0))
+                y[inv_mapping[f[1]]].append((f[0], 0.0))
         for i in range(nclass):
             y[i].sort()
+        self._db.disconnect()
         return y

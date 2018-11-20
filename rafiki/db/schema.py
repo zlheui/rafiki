@@ -81,6 +81,8 @@ class TrainJob(Base):
     user_id = Column(String, ForeignKey('user.id'), nullable=False)
     datetime_completed = Column(DateTime, default=None)
     subscribe_to_drift_detection_service = Column(Boolean, default=False)
+    retrain_scheduled = Column(String, nullable=False)
+    datetime_retrain_schedule = Column(DateTime, nullable=True, default=generate_datetime)
 
 class TrainJobWorker(Base):
     __tablename__ = 'train_job_worker'

@@ -37,11 +37,10 @@ class DataRepositoryRetrainWorker(object):
     def start(self):
         logger.info('Starting data repository retrain worker for service of id {}...' \
             .format(self._service_id))
-
+        
         logger.info('Create new dataset')
         uris = self.create_new_dataset()
         logger.info('Finish creating new dataset')
-
 
         logger.info('Create new train job')
         old_train_job = self._db.get_train_job(self._train_job_id)
@@ -102,7 +101,15 @@ class DataRepositoryRetrainWorker(object):
 
 
     def create_new_dataset(self):
+        #get train job and check task type
+        train_job = self._db.get_train_job(self._train_job_id)
+        task = train_job.task
+        if (not self._is_image_classification(task)) and (not self._is_feature_vector_classification(task)):
+            raise Exception('{} task not supported'.format(task))
+        
         random.seed(0)
+        #unified data file name, for single csv file data sets
+        DATA_FILE_NAME = 'data.csv'
 
         dataset_info = {}
         if os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, 'dataset_info.pkl')):
@@ -111,19 +118,14 @@ class DataRepositoryRetrainWorker(object):
             if not os.path.exists(os.path.join(self._cwd, self._train_job_id, self._dataset_folder)):
                 os.makedirs(os.path.join(self._cwd, self._train_job_id, self._dataset_folder))
 
-            train_job = self._db.get_train_job(self._train_job_id)
             train_uri = train_job.train_dataset_uri
             test_uri = train_job.test_dataset_uri
-            task = train_job.task
 
             if not (self._is_zip(train_uri)):
                 raise Exception('{} compression not supported'.format(train_uri))
 
             if not (self._is_zip(test_uri)):
                 raise Exception('{} compression not supported'.format(test_uri))
-
-            if not self._is_image_classification(task):
-                raise Exception('{} task not supported'.format(task))
 
             parsed_train_uri = urlparse(train_uri)
             parsed_test_uri = urlparse(test_uri)
@@ -162,24 +164,47 @@ class DataRepositoryRetrainWorker(object):
 
             data_folders = [train_folder, test_folder]
 
-            # TODO: check the folder structure after extraction
-            for folder in data_folders:
-                for folder1 in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
-                    if os.path.isdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
-                        for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
-                            if folder1 in dataset_info[folder]:
-                                dataset_info[folder][folder1].append(file)
-                            else:
-                                dataset_info[folder][folder1] = [file]
+            # TODO: check the folder structure after extraction, this is different per task
+            if self._is_image_classification(task):
+                for folder in data_folders:
+                    for folder1 in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
+                        if os.path.isdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
+                            for file in os.listdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, folder1)):
+                                if folder1 in dataset_info[folder]:
+                                    dataset_info[folder][folder1].append(file)
+                                else:
+                                    dataset_info[folder][folder1] = [file]
 
-            # sort the files in each folder according to the added-in order
-            for folder in data_folders:
-                for label,files in dataset_info[folder].items():
-                    random.shuffle(files)
+                # shuffle
+                for folder in data_folders:
+                    for label,files in dataset_info[folder].items():
+                        random.shuffle(files)
+                        
+            elif self._is_feature_vector_classification(task):
+                for folder in data_folders:
+                    #merge files first
+                    all_content = []
+                    for file in oslistdir(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder)):
+                        #merge files first
+                        content = np.genfromtxt(file, delimiter=',')
+                        all_content = all_content + [content]
+                        os.remove(file)
+                    #save data file
+                    numpy.savetxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, folder, DATA_FILE_NAME),\
+                                  all_content, delimiter=",")
+                    
+                    #record entry row index
+                    for index in range(len(allContent)):
+                        folder1 = allContent[index][-1]
+                        if folder1 in dataset_info[folder]:
+                            dataset_info[folder][folder1].append(index)
+                        else:
+                            dataset_info[folder][folder1] = [index]
 
-            for folder in data_folders:
-                for label,files in dataset_info[folder].items():
-                    print(len(files))
+                    # shuffle
+                    for folder in data_folders:
+                        for folder, files in dataset_info[folder].items():
+                            random.shuffle(files)
 
         train_folder = dataset_info['train']
         test_folder = dataset_info['test']
@@ -204,10 +229,6 @@ class DataRepositoryRetrainWorker(object):
 
         print(feedback_info)
 
-        train_folder = dataset_info['train']
-        test_folder = dataset_info['test']
-        data_folders = [train_folder, test_folder]
-
         assign_files = {}
         assign_files[train_folder] = {}
         assign_files[test_folder] = {}
@@ -231,19 +252,46 @@ class DataRepositoryRetrainWorker(object):
 
         # create new dataset
         for data_folder in data_folders:
-            for folder,content in assign_files[data_folder].items():
-                replace_size = len(content)
-                original_size = len(dataset_info[data_folder][folder])
-                if replace_size > original_size:
-                    replace_size = original_size
-            
-                for i in range(original_size-replace_size, original_size):
-                    os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, folder, dataset_info[data_folder][folder][i]))
-                for i in range(0, replace_size):
-                    shutil.move(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder, content[i]), os.path.join(self._cwd, self._train_job_id, \
-                        self._dataset_folder, data_folder, folder, content[i]))
-                tmp_list = dataset_info[data_folder][folder][:(original_size-replace_size)]
-                dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
+            if self._is_image_classification(task):
+                for folder, content in assign_files[data_folder].items():
+                    replace_size = len(content)
+                    original_size = len(dataset_info[data_folder][folder])
+                    if replace_size > original_size:
+                        replace_size = original_size
+
+                    for i in range(original_size-replace_size, original_size):
+                        os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, \
+                                               data_folder, folder, dataset_info[data_folder][folder][i]))
+                    for i in range(0, replace_size):
+                        shutil.move(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder, content[i]), \
+                                    os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, folder, content[i]))
+                    tmp_list = dataset_info[data_folder][folder][:(original_size-replace_size)]
+                    dataset_info[data_folder][folder] = assign_files[data_folder][folder] + tmp_list
+            elif self._is_feature_vector_classification(task):
+                #load content from the only data file
+                all_content = np.genfromtxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, \
+                                                         data_folder, DATA_FILE_NAME), delimiter=',')
+                for folder, content in assign_files[data_folder].items():
+                    replace_size = len(content)
+                    original_size = len(dataset_info[data_folder][folder])
+                    if replace_size > original_size:
+                        replace_size = original_size
+
+                    for i in range(original_size-replace_size, original_size):
+                        os.remove(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, \
+                                               data_folder, folder, dataset_info[data_folder][folder][i]))
+                    for i in range(0, replace_size):
+                        content = np.genfromtxt(os.path.join(self._cwd, self._train_job_id, self._feedback_folder, folder, content[i]), \
+                                                delimiter=',')
+                        #replace data in ith row with feedback data
+                        all_content[dataset_info[data_folder][folder][i]] = content[1][0]
+                    #rotate the indexing
+                    dataset_info[data_folder][folder] = dataset_info[data_folder][folder][replace_size:] + \
+                                                        dataset_info[data_folder][folder][:replace_size]
+                #save data file
+                numpy.savetxt(os.path.join(self._cwd, self._train_job_id, self._dataset_folder, data_folder, DATA_FILE_NAME),\
+                                  all_content, delimiter=",")
+                    
 
         # store dataset_info
         dataset_info['version'] += 1
@@ -309,7 +357,10 @@ class DataRepositoryRetrainWorker(object):
 
     def _is_image_classification(self, task):
         return task == TaskType.IMAGE_CLASSIFICATION
-
+    
+    def _is_feature_vector_classification(self, task):
+        return task == TaskType.FEATURE_VECTOR_CLASSIFICATION
+    
     def _zipdir(self, path, ziph):
         # ziph is zipfile handle
         for root, dirs, files in os.walk(path):

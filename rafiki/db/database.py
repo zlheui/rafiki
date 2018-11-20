@@ -65,7 +65,8 @@ class Database(object):
             train_dataset_uri=train_dataset_uri,
             test_dataset_uri=test_dataset_uri,
             budget_type=budget_type, 
-            budget_amount=budget_amount
+            budget_amount=budget_amount,
+            retrain_scheduled='False'
         )
         self._session.add(train_job)
         return train_job
@@ -102,6 +103,12 @@ class Database(object):
 
     def mark_train_job_as_running(self, train_job):
         train_job.status = TrainJobStatus.RUNNING
+        self._session.add(train_job)
+        return train_job
+
+    def mark_train_job_retrain_scheduled(self, train_job):
+        train_job.retrain_scheduled = 'True'
+        train_job.datetime_retrain_schedule = datetime.datetime.utcnow()
         self._session.add(train_job)
         return train_job
 
@@ -324,6 +331,13 @@ class Database(object):
 
         return trials
 
+    def get_trial_label_mapping(self, trial_id):
+        trial = self._session.query(Trial).filter(Trial.id == trial_id).first()
+        if trial is not None:
+            return trial.predict_label_mapping
+        else:
+            return None
+
     def get_trials_of_app(self, app):
         trials = self._session.query(Trial) \
             .join(TrainJob, Trial.train_job_id == TrainJob.id) \
@@ -406,9 +420,20 @@ class Database(object):
         self._session.add(prediction)
         return prediction
 
-    def get_prediction(self, id):
-        prediction = self._session.query(Prediction).get(id)
+    def get_prediction(self, id, trial_id):
+        prediction = self._session.query(Prediction).get(id, trial_id)
         return prediction
+
+    def get_prediction_id_by_index(self, index):
+        return self._session.query(QueryIndex).filter(QueryIndex.query_index == index).first().id
+
+    def get_prediction_by_index_and_trial(self, index, trial_id):
+        id = self.get_prediction_id_by_index(index)
+        prediction = self._session.query(Prediction).filter(Prediction.id == id and Prediction.trial_id == trial_id).first()
+        if prediction is not None:
+            return prediction.predict
+        else:
+            return None
 
     def get_train_job_detector_param(self, train_job_id, detector_name):
         d = self._session.query(DriftDetectionTrainJobSub).filter(DriftDetectionTrainJobSub.train_job_id == train_job_id).filter(DriftDetectionTrainJobSub.detector_name == detector_name).first()
@@ -451,6 +476,10 @@ class Database(object):
             return param
         else:
             return None
+
+    def trial_subscribed_to_detector(self, trial_id, detector_name):
+        detector = self._session.query(DriftDetectionSub).filter(DriftDetectionSub.trial_id == trial_id and DriftDetectionSub.detector_name == detector_name).first()
+        return detector is not None
 
     ####################################
     # Feedback for Concept drift

@@ -98,9 +98,12 @@ class DriftDetectionFeedbackWorker(object):
         for i in range(5):
             try:
                 for trial_id in trial_ids:
+                    logger.info(trial_id)
                     if not self._db.trial_subscribed_to_detector(trial_id, detector_name):
                         logger.info('{} is not subscribed to {} detector, skipping drift detection'.format(trial_id, detector_name))
                         continue
+                    else:
+                        logger.info('trial: {}, detector: {}'.format(trial_id, detector_name))
                     detector_inst = clazz()
                     detector_inst.init(ServiceType.DRIFT_FEEDBACK, detector_name, trial_id, logger=logger)
                     detection_result, index_of_change = detector_inst.update_on_feedbacks(trial_id, feedbacks, logger)

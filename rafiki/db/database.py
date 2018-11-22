@@ -114,6 +114,13 @@ class Database(object):
         self._session.commit()
         return train_job
 
+    def unmark_train_job_retrain_scheduled(self, train_job):
+        train_job.retrain_scheduled = 'False'
+        train_job.datetime_retrain_schedule = None
+        self._session.add(train_job)
+        self._session.commit()
+        return train_job
+
     def mark_train_job_as_complete(self, train_job):
         train_job.status = TrainJobStatus.COMPLETED
         train_job.datetime_completed = datetime.datetime.utcnow()

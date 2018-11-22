@@ -94,6 +94,7 @@ class DriftDetectionFeedbackWorker(object):
 
     def _update_on_feedbacks(self, detector_name, clazz, train_job_id, trial_ids, feedbacks, logger):
         logger.info('detect real concept drift')
+        logger.info('feedbacks: {}'.format(feedbacks))
         #try 5 times only and exit if still fail
         for i in range(5):
             try:
@@ -123,18 +124,24 @@ class DriftDetectionFeedbackWorker(object):
                         self._db.mark_train_job_retrain_scheduled(train_job)
 
                         #wait until have enough feedback to start a retraining
-                        while True:
-                            self._db.commit()
-                            feedback_count = self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change)
-                            if  feedback_count < MIN_FEEDBACK_COUNT:
-                                time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
-                            else:
-                                if self._client is None:
-                                    self._client = self._make_client()
-                                res = self._client.create_retrain_service(train_job_id, index_of_change)
-                                logger.info('retrain status: {}'.format(res))
-                                if bool(res['created']):
-                                    break
+                        try:
+                            while True:
+                                self._db.commit()
+                                feedback_count = self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change)
+                                if  feedback_count < MIN_FEEDBACK_COUNT:
+                                    time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
+                                else:
+                                    if self._client is None:
+                                        self._client = self._make_client()
+                                    res = self._client.create_retrain_service(train_job_id, index_of_change)
+                                    logger.info('retrain status: {}'.format(res))
+                                    if bool(res['created']):
+                                        break
+                                    else:
+                                        self._db.unmark_train_job_retrain_scheduled(train_job)
+                        except Exception as e:
+                            logger.error(e, exc_info=True)
+                            self._db.unmark_train_job_retrain_scheduled(train_job)
             except Exception as e:
                 logger.error(e, exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)

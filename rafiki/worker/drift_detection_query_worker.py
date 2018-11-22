@@ -37,7 +37,7 @@ class DriftDetectionQueryWorker(object):
                 self._cache.pop_queries_of_drift_detection_worker(self._service_id, DRIFT_DETECTION_BATCH_SIZE)
 
             if len(queries) > 0:
-                logger.info('Detecting concept drift for queries...')
+                logger.info('Detecting covariate drift for queries...')
                 logger.info(['{}_{}'.format(a,b) for a,b in zip(train_job_ids, queries)])
 
                 train_job_id_to_queries = {}
@@ -143,19 +143,25 @@ class DriftDetectionQueryWorker(object):
                         logger.info('retraining in process already for train job id: {}'.format(train_job_id))
                         break
                     self._db.mark_train_job_retrain_scheduled(train_job)
-                    while True:
-                        self._db.commit()
-                        feedback_count = self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change)
-                        if feedback_count < MIN_FEEDBACK_COUNT:
-                            time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
-                        else:
-                            if self._client is None:
-                                self._client = self._make_client()
-                            res = self._client.create_retrain_service(train_job_id, index_of_change)
-                            logger.info('retrain status: {}'.format(res))
-                            if bool(res['created']):
-                                break
 
+                    try:
+                        while True:
+                            self._db.commit()
+                            feedback_count = self._db.get_number_feedback_after_index_by_train_job(train_job_id, index_of_change)
+                            if feedback_count < MIN_FEEDBACK_COUNT:
+                                time.sleep(WAIT_FOR_FEEDBACK_SLEEP)
+                            else:
+                                if self._client is None:
+                                    self._client = self._make_client()
+                                res = self._client.create_retrain_service(train_job_id, index_of_change)
+                                logger.info('retrain status: {}'.format(res))
+                                if bool(res['created']):
+                                    break
+                                else:
+                                    self._db.unmark_train_job_retrain_scheduled(train_job)
+                    except:
+                        logger.error(e, exc_info=True)
+                        self._db.unmark_train_job_retrain_scheduled(train_job)
             except:
                 logger.info(exc_info=True)
                 time.sleep(DRIFT_WORKER_SLEEP)
